@@ -1,0 +1,923 @@
+{
+  "schema_version": "1.0.0",
+  "system": {
+    "name": "mini-brain",
+    "purpose": "Living knowledge base from newsletters, videos, meetings, and documents with multimodal ingestion, evidence-grounded summarization, context-card generation, retrieval, and learning loops.",
+    "time": {
+      "timezone": "America/Los_Angeles",
+      "clock_source": "system"
+    },
+    "deployment_modes": [
+      "local_single_user",
+      "enterprise_multi_tenant"
+    ],
+    "non_negotiables": {
+      "agents_do_not_call_each_other": true,
+      "communication_pattern": "pubsub_event_bus_only",
+      "internal_rpc": "grpc",
+      "external_api": [
+        "rest",
+        "websocket"
+      ],
+      "schema_format": "protobuf",
+      "schema_registry": "confluent_schema_registry",
+      "system_of_record": "postgresql",
+      "artifact_store": "minio",
+      "projection_graph": "memgraph",
+      "timeseries_telemetry": "clickhouse",
+      "cache": "dragonfly",
+      "no_backend_sqlite": true,
+      "device_sqlite_allowed": true,
+      "grounding_required": true
+    }
+  },
+  "network": {
+    "ports": {
+      "kafka_bootstrap": 9092,
+      "schema_registry": 8081,
+      "postgres": 5432,
+      "minio_api": 9000,
+      "minio_console": 9001,
+      "memgraph_bolt": 7687,
+      "clickhouse_http": 8123,
+      "clickhouse_tcp": 9009,
+      "keycloak": 8080,
+      "otel_grpc": 4317,
+      "otel_http": 4318,
+      "prometheus": 9090,
+      "grafana": 3000,
+      "api_gateway": 8000,
+      "api_gateway_ws": 8001
+    }
+  },
+  "infra": {
+    "event_bus": {
+      "provider": "kafka",
+      "bootstrap_servers": "localhost:9092",
+      "topics": [
+        {
+          "name": "events.orchestrator.v1",
+          "partitions": 12,
+          "replication_factor": 1,
+          "config": {
+            "cleanup.policy": "delete",
+            "retention.ms": "2592000000"
+          }
+        },
+        {
+          "name": "events.steps.requested.v1",
+          "partitions": 24,
+          "replication_factor": 1,
+          "config": {
+            "cleanup.policy": "delete",
+            "retention.ms": "2592000000"
+          }
+        },
+        {
+          "name": "events.steps.completed.v1",
+          "partitions": 24,
+          "replication_factor": 1,
+          "config": {
+            "cleanup.policy": "delete",
+            "retention.ms": "2592000000"
+          }
+        },
+        {
+          "name": "events.kb.v1",
+          "partitions": 12,
+          "replication_factor": 1,
+          "config": {
+            "cleanup.policy": "delete",
+            "retention.ms": "7776000000"
+          }
+        },
+        {
+          "name": "events.interaction.v1",
+          "partitions": 12,
+          "replication_factor": 1,
+          "config": {
+            "cleanup.policy": "delete",
+            "retention.ms": "2592000000"
+          }
+        },
+        {
+          "name": "events.metrics.v1",
+          "partitions": 12,
+          "replication_factor": 1,
+          "config": {
+            "cleanup.policy": "delete",
+            "retention.ms": "15552000000"
+          }
+        },
+        {
+          "name": "events.dlq.v1",
+          "partitions": 12,
+          "replication_factor": 1,
+          "config": {
+            "cleanup.policy": "delete",
+            "retention.ms": "15552000000"
+          }
+        }
+      ],
+      "envelope": {
+        "protobuf_package": "mini_brain.v1",
+        "type": "EventEnvelope",
+        "required_fields": [
+          "event_id",
+          "event_type",
+          "event_version",
+          "occurred_at_unix_ms",
+          "produced_at_unix_ms",
+          "domain_id",
+          "episode_id",
+          "step_id",
+          "causation_id",
+          "correlation_id",
+          "producer",
+          "payload_any"
+        ],
+        "idempotency": {
+          "producer_key": "producer+event_type+event_id",
+          "dedupe_window_ms": 86400000
+        }
+      }
+    },
+    "schema_registry": {
+      "provider": "confluent",
+      "url": "http://localhost:8081",
+      "compatibility": "BACKWARD",
+      "subjects": [
+        {
+          "subject": "events.steps.requested.v1-value",
+          "format": "protobuf",
+          "protobuf_message": "mini_brain.v1.StepRequested"
+        },
+        {
+          "subject": "events.steps.completed.v1-value",
+          "format": "protobuf",
+          "protobuf_message": "mini_brain.v1.StepCompleted"
+        }
+      ]
+    },
+    "database": {
+      "provider": "postgresql",
+      "dsn": "postgresql://mini_brain:mini_brain_pw@localhost:5432/mini_brain",
+      "extensions": [
+        "vector"
+      ],
+      "schemas": [
+        "core",
+        "sync",
+        "metrics",
+        "auth"
+      ],
+      "tables_minimum": [
+        "core.sources",
+        "core.artifacts",
+        "core.evidence_units",
+        "core.threads",
+        "core.context_cards",
+        "core.embeddings",
+        "core.episodes",
+        "core.episode_steps",
+        "sync.sync_log",
+        "sync.device_sync_state",
+        "sync.snapshots",
+        "auth.domain_policy"
+      ],
+      "vector": {
+        "dimension": 768,
+        "index": {
+          "type": "ivfflat",
+          "lists": 200
+        }
+      }
+    },
+    "artifact_store": {
+      "provider": "minio",
+      "endpoint": "http://localhost:9000",
+      "console": "http://localhost:9001",
+      "bucket": "mini-brain",
+      "content_addressing": {
+        "hash": "sha256",
+        "object_key_format": "{domain_id}/{artifact_kind}/{sha256[0:2]}/{sha256}",
+        "dedupe": true
+      },
+      "artifact_kinds": [
+        "raw_input",
+        "normalized_text",
+        "transcript",
+        "frame_set",
+        "audio_track",
+        "context_pack",
+        "context_card",
+        "embedding_export",
+        "tts_audio",
+        "ui_snapshot"
+      ]
+    },
+    "graph_projection": {
+      "provider": "memgraph",
+      "bolt_url": "bolt://localhost:7687",
+      "authoritative": false,
+      "projection_sources": [
+        "events.kb.v1",
+        "core.*"
+      ],
+      "node_types": [
+        "Source",
+        "Artifact",
+        "EvidenceUnit",
+        "Thread",
+        "ContextCard",
+        "Episode",
+        "Step"
+      ],
+      "edge_types": [
+        "DERIVED_FROM",
+        "REFERENCES",
+        "BELONGS_TO",
+        "EMITS",
+        "PRODUCED_BY",
+        "LINKS_TO"
+      ]
+    },
+    "timeseries": {
+      "provider": "clickhouse",
+      "http_url": "http://localhost:8123",
+      "tcp_port": 9009,
+      "database": "mini_brain",
+      "tables": [
+        {
+          "name": "episode_metrics",
+          "columns": [
+            {
+              "name": "ts",
+              "type": "DateTime"
+            },
+            {
+              "name": "domain_id",
+              "type": "String"
+            },
+            {
+              "name": "episode_id",
+              "type": "String"
+            },
+            {
+              "name": "metric",
+              "type": "String"
+            },
+            {
+              "name": "value",
+              "type": "Float64"
+            }
+          ],
+          "engine": "MergeTree",
+          "order_by": [
+            "domain_id",
+            "episode_id",
+            "ts"
+          ],
+          "ttl_days": 365
+        }
+      ]
+    },
+    "cache": {
+      "provider": "dragonfly",
+      "dsn": "redis://127.0.0.1:6379",
+      "key_prefix": "mini-brain",
+      "max_memory_mb": 6144,
+      "eviction_policy": "allkeys-lru",
+      "runtime_reference": {
+        "bind": "127.0.0.1",
+        "port": 6379,
+        "proactor_threads": 4,
+        "maxmemory": "6gb",
+        "cache_mode": true,
+        "dbfilename": ""
+      },
+      "namespaces": [
+        {
+          "name": "ctx",
+          "key_format": "mini-brain:ctx:{domain_id}:{query_sha256}:{retrieval_policy_hash}:{corpus_hash}:v1",
+          "ttl_seconds": 21600,
+          "value_format": "artifact_ref|string"
+        },
+        {
+          "name": "ret",
+          "key_format": "mini-brain:ret:{domain_id}:{query_sha256}:{retrieval_policy_hash}:v1",
+          "ttl_seconds": 600,
+          "value_format": "list[evidence_unit_id]"
+        },
+        {
+          "name": "emb",
+          "key_format": "mini-brain:emb:{model}:{space}:{text_sha256}:v1",
+          "ttl_seconds": 2592000,
+          "value_format": "hash{vec_ref}"
+        },
+        {
+          "name": "art",
+          "key_format": "mini-brain:art:{domain_id}:{artifact_id}:v1",
+          "ttl_seconds": 300,
+          "value_format": "hash{sha256,size,mime,minio_key}"
+        },
+        {
+          "name": "sync",
+          "key_format": "mini-brain:sync:{domain_id}:{cursor}:{limit}:v1",
+          "ttl_seconds": 60,
+          "value_format": "bytes|protobuf"
+        },
+        {
+          "name": "plan",
+          "key_format": "mini-brain:plan:{workflow_id}:{engine_profile}:{policy_version}:v1",
+          "ttl_seconds": 14400,
+          "value_format": "json"
+        },
+        {
+          "name": "tts",
+          "key_format": "mini-brain:tts:{voice_asset_id}:{mode_profile_hash}:{text_sha256}:v1",
+          "ttl_seconds": 604800,
+          "value_format": "artifact_ref|string"
+        }
+      ],
+      "stampede_prevention": {
+        "lock_key_format": "mini-brain:lock:{namespace}:{domain_id}:{hash}:v1",
+        "lock_ttl_ms": 30000,
+        "retry": {
+          "max_attempts": 20,
+          "jitter_ms_min": 50,
+          "jitter_ms_max": 150
+        }
+      }
+    },
+    "auth": {
+      "provider": "oidc_keycloak",
+      "base_url": "http://localhost:8080",
+      "realm": "mini-brain",
+      "client_id": "mini-brain-api",
+      "public_client": true,
+      "pkce": {
+        "required": true,
+        "method": "S256"
+      },
+      "redirect_uris": [
+        "http://localhost:3000/*"
+      ],
+      "token_audience": "mini-brain",
+      "scopes": [
+        "openid",
+        "profile",
+        "email"
+      ]
+    },
+    "observability": {
+      "otel": {
+        "collector_grpc": "http://localhost:4317",
+        "collector_http": "http://localhost:4318",
+        "service_name_prefix": "mini-brain",
+        "propagation": [
+          "tracecontext",
+          "baggage"
+        ]
+      },
+      "metrics": {
+        "prometheus": "http://localhost:9090",
+        "grafana": "http://localhost:3000",
+        "required_counters": [
+          "events_produced_total",
+          "events_consumed_total",
+          "cache_get_total",
+          "cache_set_total",
+          "cache_lock_acquired_total",
+          "cache_lock_contended_total",
+          "stampede_fallback_total",
+          "episode_total",
+          "step_total",
+          "step_failed_total"
+        ]
+      }
+    }
+  },
+  "engines": {
+    "llm_selection": {
+      "default": "ollama",
+      "allow_cloud": true,
+      "routing_policy": "profile_based",
+      "profiles": [
+        {
+          "name": "local_primary",
+          "llm_writer": {
+            "provider": "ollama",
+            "model": "gemma3:12b-it-qat",
+            "endpoint": "http://localhost:11434"
+          },
+          "llm_reviewer": {
+            "provider": "ollama",
+            "model": "deepseek-coder-v2:16b",
+            "endpoint": "http://localhost:11434"
+          },
+          "embedding": {
+            "provider": "ollama",
+            "model": "nomic-embed-text:latest",
+            "endpoint": "http://localhost:11434",
+            "dimension": 768
+          }
+        },
+        {
+          "name": "cloud_openai",
+          "llm_writer": {
+            "provider": "openai",
+            "model": "gpt-4.1"
+          },
+          "llm_reviewer": {
+            "provider": "openai",
+            "model": "gpt-4.1"
+          },
+          "embedding": {
+            "provider": "openai",
+            "model": "text-embedding-3-large",
+            "dimension": 3072
+          }
+        },
+        {
+          "name": "cloud_claude",
+          "llm_writer": {
+            "provider": "anthropic",
+            "model": "claude-3.5-sonnet"
+          },
+          "llm_reviewer": {
+            "provider": "anthropic",
+            "model": "claude-3.5-sonnet"
+          },
+          "embedding": {
+            "provider": "ollama",
+            "model": "nomic-embed-text:latest",
+            "dimension": 768
+          }
+        },
+        {
+          "name": "cloud_gemini",
+          "llm_writer": {
+            "provider": "google",
+            "model": "gemini-3-pro"
+          },
+          "llm_reviewer": {
+            "provider": "google",
+            "model": "gemini-3-pro"
+          },
+          "embedding": {
+            "provider": "ollama",
+            "model": "nomic-embed-text:latest",
+            "dimension": 768
+          }
+        }
+      ]
+    },
+    "vision": {
+      "frame_sampling": {
+        "default_fps": 1,
+        "max_frames_per_video": 1200,
+        "strategy": "scene_change_or_uniform"
+      },
+      "ocr": {
+        "enabled": true,
+        "engine": "tesseract",
+        "languages": [
+          "eng"
+        ]
+      }
+    },
+    "audio": {
+      "transcription": {
+        "primary": "whisper",
+        "fallback": "minicpm-v4.5",
+        "timestamped": true,
+        "granularity": "segment"
+      },
+      "voice": {
+        "providers": [
+          "minimax",
+          "elevenlabs",
+          "chatterbox"
+        ],
+        "selection": "configurable_per_interaction",
+        "requirements": {
+          "emotion_tags_required": true,
+          "prosody_controls_required": true
+        }
+      }
+    }
+  },
+  "domain_model": {
+    "entities": {
+      "source": {
+        "types": [
+          "youtube",
+          "gmail_email",
+          "whatsapp_message",
+          "pdf",
+          "webpage",
+          "image",
+          "json",
+          "text_file",
+          "meeting_audio",
+          "meeting_transcript"
+        ]
+      },
+      "artifact": {
+        "kinds": [
+          "raw_input",
+          "normalized_text",
+          "transcript",
+          "context_pack",
+          "context_card",
+          "embedding_export",
+          "tts_audio"
+        ]
+      },
+      "evidence_unit": {
+        "definition": "Smallest citeable unit of extracted content with a stable locator into the original media.",
+        "required_fields": [
+          "evidence_unit_id",
+          "domain_id",
+          "source_id",
+          "artifact_id",
+          "modality",
+          "text",
+          "locator",
+          "sha256",
+          "created_at"
+        ],
+        "modality": [
+          "text",
+          "audio_transcript",
+          "video_transcript",
+          "image_ocr",
+          "web_dom_extract"
+        ],
+        "locator_types": {
+          "video_timecode": {
+            "required": [
+              "start_ms",
+              "end_ms"
+            ]
+          },
+          "document_page": {
+            "required": [
+              "page_number",
+              "char_start",
+              "char_end"
+            ]
+          },
+          "web_dom": {
+            "required": [
+              "url",
+              "dom_path",
+              "char_start",
+              "char_end"
+            ]
+          },
+          "image_bbox": {
+            "required": [
+              "page_or_frame_index",
+              "x",
+              "y",
+              "w",
+              "h"
+            ]
+          }
+        }
+      },
+      "context_card": {
+        "definition": "Grounded, citeable insight unit derived from evidence units, optimized for semantic retrieval and human consumption.",
+        "required_fields": [
+          "context_card_id",
+          "domain_id",
+          "title",
+          "question_style_descriptor",
+          "answer",
+          "key_points",
+          "citations",
+          "embedding_ref",
+          "policy_version",
+          "created_at"
+        ],
+        "citations": {
+          "must_reference": "evidence_unit_id",
+          "must_include_locator": true
+        }
+      }
+    }
+  },
+  "agents": {
+    "execution_model": {
+      "pattern": "event_driven",
+      "request_topic": "events.steps.requested.v1",
+      "completed_topic": "events.steps.completed.v1",
+      "dlq_topic": "events.dlq.v1",
+      "max_inflight_per_agent": 64,
+      "max_attempts": 5,
+      "backoff_ms": [
+        200,
+        500,
+        1000,
+        2500,
+        5000
+      ],
+      "idempotency": {
+        "key": "domain_id+episode_id+step_id+agent_id+input_sha256",
+        "store": "postgres.core.episode_steps"
+      }
+    },
+    "registry": [
+      {
+        "agent_id": "ingest.whatsapp_link_resolver.v1",
+        "language": "python",
+        "inputs": [
+          "whatsapp_message_text"
+        ],
+        "outputs": [
+          "resolved_links_json"
+        ],
+        "produces_events": [
+          "kb.source.discovered.v1"
+        ],
+        "constraints": {
+          "no_direct_calls_to_other_agents": true
+        }
+      },
+      {
+        "agent_id": "ingest.youtube_fetch.v1",
+        "language": "python",
+        "inputs": [
+          "youtube_url"
+        ],
+        "outputs": [
+          "audio_track_artifact_ref",
+          "frame_set_artifact_ref",
+          "video_metadata_json"
+        ],
+        "produces_events": [
+          "kb.artifact.created.v1"
+        ],
+        "tools": [
+          "yt-dlp",
+          "ffmpeg"
+        ]
+      },
+      {
+        "agent_id": "ai.transcribe_timestamped.v1",
+        "language": "python",
+        "inputs": [
+          "audio_track_artifact_ref"
+        ],
+        "outputs": [
+          "transcript_artifact_ref",
+          "evidence_units_created"
+        ],
+        "grounding": {
+          "locator": "video_timecode",
+          "granularity": "segment"
+        }
+      },
+      {
+        "agent_id": "ingest.document_loader.v1",
+        "language": "python",
+        "inputs": [
+          "artifact_ref"
+        ],
+        "outputs": [
+          "normalized_text_artifact_ref",
+          "evidence_units_created"
+        ],
+        "grounding": {
+          "locator": "document_page_or_dom_or_bbox"
+        }
+      },
+      {
+        "agent_id": "ai.thread_discovery.v1",
+        "language": "python",
+        "inputs": [
+          "evidence_unit_ids"
+        ],
+        "outputs": [
+          "thread_ids",
+          "thread_labels"
+        ]
+      },
+      {
+        "agent_id": "ai.context_card_writer.v1",
+        "language": "python",
+        "inputs": [
+          "thread_id",
+          "evidence_unit_ids"
+        ],
+        "outputs": [
+          "context_card_artifact_ref",
+          "context_card_row_id"
+        ],
+        "requirements": {
+          "must_be_grounded": true,
+          "must_include_citations": true
+        }
+      },
+      {
+        "agent_id": "ai.context_card_reviewer.v1",
+        "language": "python",
+        "inputs": [
+          "draft_context_card_id"
+        ],
+        "outputs": [
+          "reviewed_context_card_id",
+          "issues_json"
+        ],
+        "requirements": {
+          "must_reject_uncited_claims": true,
+          "must_verify_citations_map_to_evidence": true
+        }
+      },
+      {
+        "agent_id": "ai.embedding_generator.v1",
+        "language": "python",
+        "inputs": [
+          "context_card_text"
+        ],
+        "outputs": [
+          "embedding_ref"
+        ],
+        "embedding_spaces": [
+          "evidence_semantic_v1",
+          "question_intent_v1"
+        ],
+        "example_mapping_requirement": {
+          "input_transcript": "this is the water that is too hot because we heated in the stove. you should wear glove which is thermal resistant before carrying it.",
+          "output_context_card_query_descriptor": "what to do when water is too hot and you want to touch it? wear thermal resistant gloves"
+        }
+      },
+      {
+        "agent_id": "sync.monotonic_log_writer.v1",
+        "language": "rust",
+        "inputs": [
+          "kb_events"
+        ],
+        "outputs": [
+          "sync_log_rows"
+        ],
+        "requirements": {
+          "cursor_strategy": "monotonic_sync_log"
+        }
+      },
+      {
+        "agent_id": "projector.memgraph_updater.v1",
+        "language": "rust",
+        "inputs": [
+          "kb_events"
+        ],
+        "outputs": [
+          "memgraph_projection"
+        ]
+      }
+    ]
+  },
+  "workflows": {
+    "workflow_catalog": [
+      {
+        "workflow_id": "wf.youtube_from_whatsapp_to_context_cards.v1",
+        "description": "Resolve WhatsApp self-message YouTube link, fetch media, transcribe with timestamps, generate grounded context cards, review, embed, store, and index.",
+        "trigger": {
+          "event_type": "interaction.user_submitted_source.v1",
+          "input_type": "whatsapp_message_text"
+        },
+        "steps": [
+          {
+            "step_id": "s1.resolve_links",
+            "agent_id": "ingest.whatsapp_link_resolver.v1"
+          },
+          {
+            "step_id": "s2.fetch_youtube",
+            "agent_id": "ingest.youtube_fetch.v1"
+          },
+          {
+            "step_id": "s3.transcribe",
+            "agent_id": "ai.transcribe_timestamped.v1"
+          },
+          {
+            "step_id": "s4.thread_discovery",
+            "agent_id": "ai.thread_discovery.v1"
+          },
+          {
+            "step_id": "s5.write_context_cards",
+            "agent_id": "ai.context_card_writer.v1"
+          },
+          {
+            "step_id": "s6.review_context_cards",
+            "agent_id": "ai.context_card_reviewer.v1"
+          },
+          {
+            "step_id": "s7.embed_context_cards",
+            "agent_id": "ai.embedding_generator.v1"
+          },
+          {
+            "step_id": "s8.sync_log",
+            "agent_id": "sync.monotonic_log_writer.v1"
+          },
+          {
+            "step_id": "s9.project_graph",
+            "agent_id": "projector.memgraph_updater.v1"
+          }
+        ],
+        "cache_usage": [
+          {
+            "namespace": "emb",
+            "purpose": "avoid recomputing embeddings by text hash"
+          },
+          {
+            "namespace": "ctx",
+            "purpose": "cache context pack artifacts for repeat queries"
+          }
+        ]
+      }
+    ]
+  },
+  "ui": {
+    "agent_canvas": {
+      "definition": "UI where user selects agents and composes workflows, persists to architecture.json, triggers workflow runs, inspects evidence/citations, and provides human feedback.",
+      "required_capabilities": [
+        "select_agent",
+        "compose_workflow",
+        "configure_engine_profile",
+        "run_workflow",
+        "inspect_steps",
+        "view_evidence_with_locators",
+        "review_context_card_with_citations",
+        "provide_human_feedback",
+        "voice_interaction"
+      ],
+      "human_in_loop": {
+        "modes": [
+          "inline_text",
+          "voice_prompt",
+          "voice_over_video"
+        ],
+        "requirements": {
+          "emotion_tags_required": true,
+          "empathy_style_required": true
+        },
+        "voice_providers_configurable": [
+          "minimax",
+          "elevenlabs",
+          "chatterbox"
+        ]
+      }
+    }
+  },
+  "verification": {
+    "gates": [
+      {
+        "gate_id": "G1.kafka_topics_present",
+        "pass_condition": "All required topics exist with exact partitions and retention.ms",
+        "command_reference": "scripts/smoke.sh::check_kafka_topics"
+      },
+      {
+        "gate_id": "G2.schema_registry_ready",
+        "pass_condition": "Schema Registry reachable and subject events.steps.requested.v1-value exists",
+        "command_reference": "scripts/smoke.sh::check_schema_registry"
+      },
+      {
+        "gate_id": "G3.postgres_ready",
+        "pass_condition": "Postgres reachable, vector extension installed, required schemas/tables exist",
+        "command_reference": "scripts/smoke.sh::check_postgres"
+      },
+      {
+        "gate_id": "G4.minio_ready",
+        "pass_condition": "Bucket mini-brain exists and hello put/get test passes",
+        "command_reference": "scripts/smoke.sh::check_minio"
+      },
+      {
+        "gate_id": "G5.clickhouse_ready",
+        "pass_condition": "DB/table exists and insert/select test passes",
+        "command_reference": "scripts/smoke.sh::check_clickhouse"
+      },
+      {
+        "gate_id": "G6.memgraph_ready",
+        "pass_condition": "Create/query/delete test graph passes",
+        "command_reference": "scripts/smoke.sh::check_memgraph"
+      },
+      {
+        "gate_id": "G7.keycloak_ready",
+        "pass_condition": "Realm/client exists and OIDC discovery endpoint returns issuer",
+        "command_reference": "scripts/smoke.sh::check_keycloak"
+      },
+      {
+        "gate_id": "G8.dragonfly_ready",
+        "pass_condition": "redis-cli ping returns PONG",
+        "command_reference": "scripts/smoke.sh::check_dragonfly"
+      },
+      {
+        "gate_id": "G9.protobuf_codegen_ready",
+        "pass_condition": "Generated code exists for rust/go/python",
+        "command_reference": "scripts/smoke.sh::check_codegen"
+      }
+    ]
+  }
+}
