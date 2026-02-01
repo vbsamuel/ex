@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+litellm_cache.sqlite/
+issues/.pdd/
+docker-compose.yml
