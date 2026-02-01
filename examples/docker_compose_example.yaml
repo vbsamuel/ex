@@ -1,0 +1,96 @@
+# ---------------------------------------------------------------------------
+# EXAMPLE USAGE GUIDE: IE-X Stack
+# ---------------------------------------------------------------------------
+# This file serves as a configuration guide and checklist for running the 
+# ie-x-stack docker-compose module.
+#
+# PREREQUISITES:
+# 1. Docker and Docker Compose installed.
+# 2. The 'docker-compose.yml' file (the module) saved in your working directory.
+# 3. Two configuration files created in the same directory:
+#    - prometheus.yml
+#    - otel-collector-config.yaml
+# ---------------------------------------------------------------------------
+
+# STEP 1: Create the required configuration files
+# ---------------------------------------------------------------------------
+
+# File: ./prometheus.yml
+# Purpose: Configures Prometheus to scrape metrics from the stack
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'otel-collector'
+    static_configs:
+      - targets: ['otel-collector:8889']
+  - job_name: 'minio'
+    metrics_path: /minio/v2/metrics/cluster
+    static_configs:
+      - targets: ['minio:9000']
+
+# File: ./otel-collector-config.yaml
+# Purpose: Configures OpenTelemetry to receive and export traces/metrics
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+  logging:
+    loglevel: debug
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      exporters: [prometheus]
+    traces:
+      receivers: [otlp]
+      exporters: [logging]
+
+# STEP 2: Create an .env file (Optional but recommended)
+# ---------------------------------------------------------------------------
+# File: ./.env
+# Purpose: Overrides default credentials defined in the compose file.
+#
+# POSTGRES_USER=my_secure_user
+# POSTGRES_PASSWORD=my_secure_password
+# MINIO_ROOT_USER=admin
+# MINIO_ROOT_PASSWORD=supersecret
+# GRAFANA_ADMIN_PASSWORD=admin
+
+# STEP 3: Run the Stack
+# ---------------------------------------------------------------------------
+# Command to start all services in detached mode:
+# $ docker-compose up -d
+
+# STEP 4: Verify Health Status
+# ---------------------------------------------------------------------------
+# Check if all services are healthy:
+# $ docker-compose ps
+
+# Expected Output (abbreviated):
+# Name                  State                    Ports
+# ----------------------------------------------------------------------
+# iex-clickhouse        Up (healthy)             8123/tcp, 9009/tcp
+# iex-dragonfly         Up (healthy)             6379/tcp
+# iex-grafana           Up (healthy)             3000/tcp
+# iex-kafka             Up (healthy)             9092/tcp
+# iex-keycloak          Up (healthy)             8080/tcp
+# iex-memgraph          Up (healthy)             7687/tcp, 3000/tcp
+# iex-minio             Up (healthy)             9000/tcp, 9001/tcp
+# iex-postgres          Up (healthy)             5432/tcp
+# ...
+
+# STEP 5: Access Services
+# ---------------------------------------------------------------------------
+# - MinIO Console:      http://localhost:9001 (User/Pass: minioadmin/minioadmin)
+# - Grafana:            http://localhost:3000 (User/Pass: admin/admin)
+# - Memgraph Lab:       http://localhost:3001
+# - Keycloak:           http://localhost:8080
+# - Postgres:           localhost:5432
+# - Kafka:              localhost:9092
