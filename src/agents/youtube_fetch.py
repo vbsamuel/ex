@@ -1,6 +1,5 @@
 import json
 import subprocess
-from typing import dict
 
 
 def fetch_metadata(url: str) -> dict:

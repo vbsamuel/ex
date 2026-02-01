@@ -1,0 +1,41 @@
+{
+  "profile": "demo",
+  "stack": {
+    "kafka": "KRaft",
+    "schema_registry": true,
+    "postgres": "pgvector",
+    "minio": true,
+    "redis": "dragonfly@redis://127.0.0.1:6379"
+  },
+  "disabled": ["memgraph", "clickhouse", "keycloak", "prometheus", "grafana", "otel"],
+  "topics": [
+    "events.orchestrator.v1",
+    "events.steps.requested.v1",
+    "events.steps.completed.v1",
+    "events.kb.v1",
+    "events.interaction.v1",
+    "events.metrics.v1",
+    "events.dlq.v1"
+  ],
+  "golden_path": [
+    "YouTube URL",
+    "captions VTT",
+    "evidence_units",
+    "context_cards",
+    "embeddings(768)",
+    "query retrieval",
+    "UI with citations"
+  ],
+  "services": {
+    "api_gateway": "src/services/api_gateway.py",
+    "orchestrator": "src/services/orchestrator_service.py",
+    "agents": [
+      "src/agents/youtube_fetch.py",
+      "src/agents/transcribe.py",
+      "src/agents/context_card_writer.py",
+      "src/agents/context_card_reviewer.py",
+      "src/agents/embedding_generator.py"
+    ],
+    "verifier": "src/tools/grounding_verifier.py"
+  }
+}

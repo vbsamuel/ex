@@ -25,4 +25,4 @@ smoke:
 	@./scripts/smoke.sh
 
 reset:
-	@echo "Will reset local infrastructure state and data (next prompt)."
+	@docker compose -f docker-compose.demo.yml down --remove-orphans --volumes

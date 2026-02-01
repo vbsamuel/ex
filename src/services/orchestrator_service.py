@@ -1,4 +1,5 @@
 import asyncio
+import json
 import time
 import uuid
 from datetime import datetime
@@ -129,14 +130,14 @@ async def handle_context_cards(store: PgStore, episode_id: uuid.UUID) -> None:
         await store.execute(
             """
             INSERT INTO core.context_cards (id, episode_id, title, summary, key_points, citations, status)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7)
             """,
             uuid.uuid4(),
             episode_id,
             card.get("title") or "Untitled",
             card.get("summary") or "",
-            card.get("key_points") or [],
-            card.get("citations") or [],
+            json.dumps(card.get("key_points") or [], ensure_ascii=True),
+            json.dumps(card.get("citations") or [], ensure_ascii=True),
             status,
         )
 

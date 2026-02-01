@@ -17,6 +17,6 @@ DRAGONFLY_REDIS = env("DRAGONFLY_REDIS", "redis://127.0.0.1:6379")
 CACHE_PREFIX = env("CACHE_PREFIX", "mini-brain")
 
 OLLAMA_BASE = env("OLLAMA_BASE", "http://localhost:11434")
-OLLAMA_WRITER_MODEL = env("OLLAMA_WRITER_MODEL", "gemma3")
-OLLAMA_REVIEWER_MODEL = env("OLLAMA_REVIEWER_MODEL", "deepseek-coder-v2")
+OLLAMA_WRITER_MODEL = env("OLLAMA_WRITER_MODEL", "gemma3:12b-it-qat")
+OLLAMA_REVIEWER_MODEL = env("OLLAMA_REVIEWER_MODEL", "deepseek-coder-v2:16b")
 OLLAMA_EMBED_MODEL = env("OLLAMA_EMBED_MODEL", "nomic-embed-text:latest")

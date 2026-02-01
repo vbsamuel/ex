@@ -9,12 +9,12 @@ MINIO_USER="minio"
 MINIO_PASS="minio123"
 BUCKET="mini-brain"
 
-if ! docker run --rm --network host minio/mc:RELEASE.2024-12-18T13-15-44Z \
+if ! docker run --rm --network host minio/mc:RELEASE.2024-11-21T17-21-54Z \
   alias set iex "$MINIO_ENDPOINT" "$MINIO_USER" "$MINIO_PASS" > /dev/null; then
   FAIL "configure minio alias"
 fi
 
-if ! docker run --rm --network host minio/mc:RELEASE.2024-12-18T13-15-44Z \
+if ! docker run --rm --network host minio/mc:RELEASE.2024-11-21T17-21-54Z \
   mb --ignore-existing iex/"$BUCKET" > /dev/null; then
   FAIL "create bucket $BUCKET"
 fi

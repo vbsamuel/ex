@@ -101,13 +101,19 @@ async def query(q: str):
     )
     cards = []
     for r in rows:
+        key_points = r["key_points"]
+        citations = r["citations"]
+        if isinstance(key_points, str):
+            key_points = json.loads(key_points)
+        if isinstance(citations, str):
+            citations = json.loads(citations)
         cards.append(
             {
                 "id": str(r["id"]),
                 "title": r["title"],
                 "summary": r["summary"],
-                "key_points": r["key_points"],
-                "citations": r["citations"],
+                "key_points": key_points,
+                "citations": citations,
             }
         )
     return {"cards": cards}
@@ -144,28 +150,106 @@ async def ui():
   <meta charset=\"utf-8\" />
   <title>IE-X Demo</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    #cards { margin-top: 20px; }
-    .card { border: 1px solid #ddd; padding: 12px; margin-bottom: 12px; }
-    .status { margin-top: 10px; font-family: monospace; white-space: pre; }
+    :root {
+      --bg: #f7f7f4;
+      --fg: #161616;
+      --muted: #6f6f6f;
+      --line: #e4e4df;
+      --accent: #0f766e;
+      --shadow: 0 10px 30px rgba(0,0,0,0.06);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(1200px 800px at 10% 10%, #ffffff 0%, #f7f7f4 60%, #f1f1ed 100%);
+      color: var(--fg);
+      font-family: \"Space Grotesk\", \"IBM Plex Sans\", \"Segoe UI\", sans-serif;
+      letter-spacing: 0.1px;
+    }
+    .wrap { max-width: 980px; margin: 40px auto; padding: 0 24px; }
+    h1 { font-size: 28px; margin: 0 0 8px 0; }
+    .sub { color: var(--muted); margin-bottom: 24px; }
+    .panel {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+    }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; }
+    input {
+      flex: 1 1 520px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 14px;
+      background: #fafafa;
+    }
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 12px 16px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .status {
+      margin-top: 10px;
+      font-family: \"IBM Plex Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace;
+      font-size: 12px;
+      background: #f8f8f8;
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      white-space: pre-wrap;
+    }
+    #cards { margin-top: 16px; }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      background: #fff;
+      box-shadow: var(--shadow);
+      margin-bottom: 12px;
+    }
+    .card h3 { margin: 0 0 6px 0; font-size: 18px; }
+    .meta { color: var(--muted); font-size: 12px; }
+    .cite {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
   </style>
 </head>
 <body>
-  <h1>IE-X Demo</h1>
-  <input id=\"url\" size=\"80\" placeholder=\"YouTube URL\" />
-  <button id=\"run\">Run</button>
-  <div class=\"status\" id=\"status\"></div>
-  <div>
-    <input id=\"query\" size=\"60\" placeholder=\"Query\" />
-    <button id=\"search\">Search</button>
+  <div class=\"wrap\">
+    <h1>IE-X Demo</h1>
+    <div class=\"sub\">Paste a YouTube URL to extract evidence and generate grounded cards.</div>
+    <div class=\"panel\">
+      <div class=\"row\">
+        <input id=\"url\" placeholder=\"YouTube URL\" />
+        <button id=\"run\">Run</button>
+      </div>
+      <div class=\"status\" id=\"status\">Idle</div>
+    </div>
+    <div class=\"panel\">
+      <div class=\"row\">
+        <input id=\"query\" placeholder=\"Ask a question (e.g., zoo demo)\" />
+        <button id=\"search\">Search</button>
+      </div>
+    </div>
+    <div id=\"cards\"></div>
   </div>
-  <div id=\"cards\"></div>
 <script>
 let episodeId = null;
 let ws = null;
 
 document.getElementById('run').onclick = async () => {
   const url = document.getElementById('url').value;
+  document.getElementById('run').disabled = true;
   const res = await fetch('/api/run', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({youtube_url: url})});
   const data = await res.json();
   episodeId = data.episode_id;
@@ -175,6 +259,9 @@ document.getElementById('run').onclick = async () => {
   ws.onmessage = (evt) => {
     const payload = JSON.parse(evt.data);
     document.getElementById('status').textContent = JSON.stringify(payload, null, 2);
+    if (payload.status === 'COMPLETED' || payload.status === 'FAILED') {
+      document.getElementById('run').disabled = false;
+    }
   };
 };
 
@@ -187,7 +274,8 @@ document.getElementById('search').onclick = async () => {
   for (const c of data.cards) {
     const div = document.createElement('div');
     div.className = 'card';
-    div.innerHTML = `<h3>${c.title}</h3><p>${c.summary}</p><pre>${JSON.stringify(c.citations, null, 2)}</pre>`;
+    const cite = (c.citations || []).map(x => `${x.evidence_unit_id} @ ${x.start_ms}-${x.end_ms}`).join(' | ');
+    div.innerHTML = `<h3>${c.title}</h3><div class="meta">${(c.key_points || []).length} key points</div><p>${c.summary}</p><div class="cite">${cite}</div>`;
     cards.appendChild(div);
   }
 };
