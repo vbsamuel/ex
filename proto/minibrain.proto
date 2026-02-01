@@ -1,0 +1,316 @@
+// proto/minibrain.proto
+syntax = "proto3";
+
+package iex.minibrain.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+
+option java_package = "com.iex.minibrain.v1";
+option java_multiple_files = true;
+option go_package = "github.com/iex/minibrain/gen/v1;minibrainv1";
+
+// =============================================================================
+// Domain Models
+// =============================================================================
+
+// Represents the origin of information (e.g., a specific video file, a web page, a PDF).
+message Source {
+  string id = 1;
+  string uri = 2; // S3 path, URL, or file path
+  SourceType type = 3;
+  string mime_type = 4;
+  map<string, string> metadata = 5;
+  google.protobuf.Timestamp created_at = 6;
+  string version = 7;
+
+  enum SourceType {
+    SOURCE_TYPE_UNSPECIFIED = 0;
+    SOURCE_TYPE_VIDEO = 1;
+    SOURCE_TYPE_DOCUMENT = 2;
+    SOURCE_TYPE_WEB_PAGE = 3;
+    SOURCE_TYPE_IMAGE = 4;
+    SOURCE_TYPE_AUDIO = 5;
+  }
+}
+
+// A processed output derived from a Source (e.g., a transcript, a summary, an embedding).
+message Artifact {
+  string id = 1;
+  string source_id = 2;
+  ArtifactType type = 3;
+  bytes content = 4; // Raw content or reference to storage
+  map<string, string> metadata = 5;
+  google.protobuf.Timestamp created_at = 6;
+  string producer_agent_id = 7;
+
+  enum ArtifactType {
+    ARTIFACT_TYPE_UNSPECIFIED = 0;
+    ARTIFACT_TYPE_TRANSCRIPT = 1;
+    ARTIFACT_TYPE_SUMMARY = 2;
+    ARTIFACT_TYPE_EMBEDDING = 3;
+    ARTIFACT_TYPE_KEY_FRAMES = 4;
+    ARTIFACT_TYPE_ENTITIES = 5;
+  }
+}
+
+// The atomic unit of truth linking an assertion to a specific location in a Source.
+// Grounding locators are mandatory based on the source type.
+message EvidenceUnit {
+  string id = 1;
+  string source_id = 2;
+  string artifact_id = 3;
+  string content_snippet = 4;
+  float confidence_score = 5;
+  
+  // Mandatory Grounding Locators (Oneof ensures at least one is present, 
+  // but logic should enforce specific types based on Source)
+  oneof locator {
+    VideoLocator video_locator = 6;
+    DocumentLocator document_locator = 7;
+    WebLocator web_locator = 8;
+    ImageLocator image_locator = 9;
+  }
+}
+
+message VideoLocator {
+  int64 start_time_ms = 1;
+  int64 end_time_ms = 2;
+  int32 frame_index = 3;
+}
+
+message DocumentLocator {
+  int32 page_number = 1;
+  int32 start_offset = 2; // Character offset
+  int32 end_offset = 3;
+  string text_block_id = 4;
+}
+
+message WebLocator {
+  string dom_selector = 1; // CSS Selector or XPath
+  string element_id = 2;
+  string url_fragment = 3;
+}
+
+message ImageLocator {
+  // Normalized coordinates (0.0 to 1.0)
+  float x_min = 1;
+  float y_min = 2;
+  float x_max = 3;
+  float y_max = 4;
+  string label = 5;
+}
+
+// A synthesized collection of evidence and reasoning presented to the user or downstream agent.
+message ContextCard {
+  string id = 1;
+  string thread_id = 2;
+  string title = 3;
+  string summary = 4;
+  repeated EvidenceUnit evidence = 5;
+  repeated string related_concept_ids = 6;
+  google.protobuf.Timestamp created_at = 7;
+  float relevance_score = 8;
+}
+
+// Represents a conversational or investigative session.
+message Thread {
+  string id = 1;
+  string user_id = 2;
+  string title = 3;
+  ThreadStatus status = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+  map<string, string> context_variables = 7;
+
+  enum ThreadStatus {
+    THREAD_STATUS_UNSPECIFIED = 0;
+    THREAD_STATUS_ACTIVE = 1;
+    THREAD_STATUS_ARCHIVED = 2;
+    THREAD_STATUS_SUSPENDED = 3;
+  }
+}
+
+// =============================================================================
+// Kafka Event Messages
+// =============================================================================
+
+// Triggered when a workflow step is initiated.
+message StepRequested {
+  string trace_id = 1;
+  string step_id = 2;
+  string workflow_name = 3;
+  string thread_id = 4;
+  google.protobuf.Struct input_payload = 5;
+  google.protobuf.Timestamp requested_at = 6;
+  int32 priority = 7;
+}
+
+// Triggered when a workflow step finishes execution.
+message StepCompleted {
+  string trace_id = 1;
+  string step_id = 2;
+  string workflow_name = 3;
+  Status status = 4;
+  google.protobuf.Struct output_payload = 5;
+  string error_message = 6;
+  google.protobuf.Timestamp completed_at = 7;
+  
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_SUCCESS = 1;
+    STATUS_FAILURE = 2;
+    STATUS_SKIPPED = 3;
+  }
+}
+
+// Represents a change in the knowledge graph or state.
+message KnowledgeEvent {
+  string event_id = 1;
+  EventType type = 2;
+  string entity_id = 3; // ID of Source, Artifact, or EvidenceUnit
+  string entity_type = 4; // "Source", "Artifact", etc.
+  google.protobuf.Struct change_delta = 5;
+  google.protobuf.Timestamp occurred_at = 6;
+
+  enum EventType {
+    EVENT_TYPE_UNSPECIFIED = 0;
+    EVENT_TYPE_CREATED = 1;
+    EVENT_TYPE_UPDATED = 2;
+    EVENT_TYPE_DELETED = 3;
+    EVENT_TYPE_INDEXED = 4;
+  }
+}
+
+// =============================================================================
+// gRPC Service Definitions
+// =============================================================================
+
+// Service for storing and retrieving core domain entities.
+service PersistenceService {
+  rpc SaveSource(SaveSourceRequest) returns (SaveSourceResponse);
+  rpc GetSource(GetSourceRequest) returns (GetSourceResponse);
+  rpc SaveArtifact(SaveArtifactRequest) returns (SaveArtifactResponse);
+  rpc SaveEvidence(SaveEvidenceRequest) returns (SaveEvidenceResponse);
+  rpc GetThread(GetThreadRequest) returns (GetThreadResponse);
+  rpc UpdateThread(UpdateThreadRequest) returns (UpdateThreadResponse);
+}
+
+// Service for semantic search and graph traversal.
+service KnowledgeQueryService {
+  rpc SearchEvidence(SearchEvidenceRequest) returns (SearchEvidenceResponse);
+  rpc GetContextCards(GetContextCardsRequest) returns (GetContextCardsResponse);
+  rpc GetRelatedEntities(GetRelatedEntitiesRequest) returns (GetRelatedEntitiesResponse);
+}
+
+// Service for LLM inference and agentic reasoning.
+service AIEngineService {
+  rpc GenerateCompletion(GenerateCompletionRequest) returns (GenerateCompletionResponse);
+  rpc AnalyzeSource(AnalyzeSourceRequest) returns (AnalyzeSourceResponse);
+  rpc SynthesizeContext(SynthesizeContextRequest) returns (SynthesizeContextResponse);
+}
+
+// Service for high-speed ephemeral data access.
+service CacheService {
+  rpc Set(CacheSetRequest) returns (CacheSetResponse);
+  rpc Get(CacheGetRequest) returns (CacheGetResponse);
+  rpc Invalidate(CacheInvalidateRequest) returns (google.protobuf.Empty);
+}
+
+// Service for identity and access management.
+service AuthService {
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+  rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse);
+}
+
+// =============================================================================
+// Request/Response Messages for Services
+// =============================================================================
+
+// Persistence Messages
+message SaveSourceRequest { Source source = 1; }
+message SaveSourceResponse { string id = 1; }
+message GetSourceRequest { string id = 1; }
+message GetSourceResponse { Source source = 1; }
+message SaveArtifactRequest { Artifact artifact = 1; }
+message SaveArtifactResponse { string id = 1; }
+message SaveEvidenceRequest { EvidenceUnit evidence = 1; }
+message SaveEvidenceResponse { string id = 1; }
+message GetThreadRequest { string id = 1; }
+message GetThreadResponse { Thread thread = 1; }
+message UpdateThreadRequest { Thread thread = 1; }
+message UpdateThreadResponse { Thread thread = 1; }
+
+// Knowledge Query Messages
+message SearchEvidenceRequest {
+  string query = 1;
+  repeated string filter_source_ids = 2;
+  int32 limit = 3;
+  float min_confidence = 4;
+}
+message SearchEvidenceResponse { repeated EvidenceUnit results = 1; }
+
+message GetContextCardsRequest {
+  string thread_id = 1;
+  int32 limit = 2;
+}
+message GetContextCardsResponse { repeated ContextCard cards = 1; }
+
+message GetRelatedEntitiesRequest {
+  string entity_id = 1;
+  string relation_type = 2;
+}
+message GetRelatedEntitiesResponse { repeated string entity_ids = 1; }
+
+// AI Engine Messages
+message GenerateCompletionRequest {
+  string prompt = 1;
+  string model = 2;
+  float temperature = 3;
+  repeated string context_ids = 4;
+}
+message GenerateCompletionResponse {
+  string content = 1;
+  int32 tokens_used = 2;
+}
+
+message AnalyzeSourceRequest {
+  string source_id = 1;
+  repeated string analysis_types = 2; // e.g., "summary", "entities"
+}
+message AnalyzeSourceResponse { repeated Artifact artifacts = 1; }
+
+message SynthesizeContextRequest {
+  repeated string evidence_ids = 1;
+  string query = 2;
+}
+message SynthesizeContextResponse { ContextCard card = 1; }
+
+// Cache Messages
+message CacheSetRequest {
+  string key = 1;
+  bytes value = 2;
+  int32 ttl_seconds = 3;
+}
+message CacheSetResponse { bool success = 1; }
+message CacheGetRequest { string key = 1; }
+message CacheGetResponse { bytes value = 1; bool found = 2; }
+message CacheInvalidateRequest { string key = 1; }
+
+// Auth Messages
+message ValidateTokenRequest { string token = 1; }
+message ValidateTokenResponse {
+  bool valid = 1;
+  string user_id = 2;
+  repeated string roles = 3;
+}
+message RefreshTokenRequest { string refresh_token = 1; }
+message RefreshTokenResponse { string new_token = 1; }
+message CheckPermissionRequest {
+  string user_id = 1;
+  string resource = 2;
+  string action = 3;
+}
+message CheckPermissionResponse { bool allowed = 1; }
