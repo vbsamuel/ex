@@ -8,7 +8,7 @@ from typing import Dict, Any
 from src.shared.storage_pg import PgStore
 from src.shared.kafka_consumer import KafkaConsumer
 from src.shared.kafka_producer import KafkaProducer
-from src.agents.transcribe import download_captions_vtt, parse_vtt
+from src.agents.transcribe import get_evidence_segments
 from src.agents.context_card_writer import generate_cards
 from src.agents.context_card_reviewer import review_cards
 from src.agents.embedding_generator import embed_text
@@ -68,21 +68,9 @@ async def _emit_step_completed(producer: KafkaProducer, episode_id: str, step: s
 
 
 async def handle_transcribe(store: PgStore, episode_id: uuid.UUID, youtube_url: str) -> None:
-    vtt_text = download_captions_vtt(youtube_url)
-    segments = parse_vtt(vtt_text)
+    segments = get_evidence_segments(youtube_url)
     if not segments:
-        raise RuntimeError("No caption segments parsed")
-
-    artifacts = MinioArtifacts()
-    key = f"{episode_id}/captions.vtt"
-    artifacts.put_text(key, vtt_text)
-    await store.execute(
-        "INSERT INTO core.artifacts (id, episode_id, kind, uri) VALUES ($1, $2, $3, $4)",
-        uuid.uuid4(),
-        episode_id,
-        "captions.vtt",
-        key,
-    )
+        raise RuntimeError("No transcript segments parsed")
 
     rows = [
         (

@@ -19,7 +19,7 @@
   ],
   "golden_path": [
     "YouTube URL",
-    "captions VTT",
+    "captions VTT or audio ASR",
     "evidence_units",
     "context_cards",
     "embeddings(768)",
