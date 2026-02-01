@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 import uuid
 from typing import Any
 
@@ -61,7 +62,7 @@ async def run_episode(payload: dict[str, Any]):
             "episode_id": str(episode_id),
             "step": "episode.start",
             "youtube_url": youtube_url,
-            "requested_at_ms": int(asyncio.get_event_loop().time() * 1000),
+            "requested_at_ms": int(time.time() * 1000),
         },
     )
 

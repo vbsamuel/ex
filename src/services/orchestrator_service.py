@@ -1,4 +1,5 @@
 import asyncio
+import time
 import uuid
 from datetime import datetime
 from typing import Dict, Any
@@ -47,7 +48,7 @@ async def _emit_step_requested(producer: KafkaProducer, episode_id: str, step: s
             "episode_id": episode_id,
             "step": step,
             "youtube_url": youtube_url,
-            "requested_at_ms": int(asyncio.get_event_loop().time() * 1000),
+            "requested_at_ms": int(time.time() * 1000),
         },
     )
 
@@ -60,7 +61,7 @@ async def _emit_step_completed(producer: KafkaProducer, episode_id: str, step: s
             "step": step,
             "status": status,
             "message": message or "",
-            "completed_at_ms": int(asyncio.get_event_loop().time() * 1000),
+            "completed_at_ms": int(time.time() * 1000),
         },
     )
 
