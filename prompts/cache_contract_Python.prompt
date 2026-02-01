@@ -1,0 +1,25 @@
+% Purpose: Cache contract specification defining all 7 namespaces with exact key formats, TTLs, and stampede prevention logic
+
+% Requirements
+- Define Dragonfly cache contract module with 7 namespaces: ctx, ret, emb, art, sync, plan, tts
+- Specify precise key formats including domain_id, query_sha256, retrieval_policy_hash, corpus_hash versioning
+- Implement stampede prevention with lock key format: mini-brain:lock:{namespace}:{domain_id}:{hash}:v1
+- Configure lock_ttl_ms=30000, retry max_attempts=20 with jitter 50-150ms
+- Define cache invalidation strategies
+- Ensure consistency guarantees
+
+% Output Format
+- Generate Python module at src/shared/cache_contract.py
+- Use type hints throughout
+- Include docstrings for all public functions
+
+% Context
+This module defines the contract for all cache operations in the IE-X system. All services and agents will use these definitions for cache access.
+
+% Dependencies
+- proto_schemas_Python.prompt (for understanding data types)
+
+% Implementation Notes
+- Use dataclasses or Pydantic models for cache key structures
+- Implement helper functions for key generation
+- Include validation logic for key components

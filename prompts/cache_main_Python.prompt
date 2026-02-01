@@ -1,0 +1,26 @@
+% Purpose: Cache service entry point starting the gRPC server with Dragonfly connection
+
+% Requirements
+- Initialize redis-py async client to Dragonfly
+- Start gRPC server on port 50052
+- Register CacheService implementation
+- Configure OpenTelemetry tracing
+- Set up signal handlers for graceful shutdown
+- Validate cache connectivity on startup
+- Implement health checks
+- Monitor connection pool status
+
+% Output Format
+- Generate Python module at src/services/cache_service_main.py
+- Include comprehensive type hints
+- Provide if __name__ == "__main__" entry point
+
+% Dependencies
+- cache_service_Python.prompt
+- grpc_server_base_Python.prompt
+- telemetry_collector_Python.prompt
+
+% Implementation Notes
+- Use asyncio for async runtime
+- Implement proper signal handling
+- Include startup validation

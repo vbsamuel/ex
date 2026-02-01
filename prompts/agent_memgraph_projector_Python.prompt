@@ -1,0 +1,24 @@
+% Purpose: Memgraph projector agent maintaining graph projection of knowledge relationships
+
+% Requirements
+- Create Kafka consumer agent (projector.memgraph_updater.v1)
+- Subscribe to events.kb.v1
+- Project knowledge graph to Memgraph
+- Create nodes (Source, Artifact, EvidenceUnit, Thread, ContextCard)
+- Create edges (CONTAINS, CITES, RELATES_TO, MEMBER_OF) based on knowledge events
+- Implement Cypher queries for graph traversal, path finding, and subgraph extraction
+- Handle incremental updates, node merging, and edge upserts
+
+% Output Format
+- Generate Python module at src/agents/memgraph_projector.py
+- Include comprehensive type hints
+- Use async/await patterns
+
+% Dependencies
+- proto_schemas_Python.prompt
+- kafka_consumer_base_Python.prompt
+
+% Implementation Notes
+- Use pymgclient for Memgraph connection
+- Implement Cypher query generation
+- Handle graph updates incrementally

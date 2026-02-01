@@ -1,0 +1,26 @@
+% Purpose: API gateway exposing REST and WebSocket endpoints for external clients
+
+% Requirements
+- Create FastAPI service providing REST API (port 8000) and WebSocket (port 8001) interfaces
+- Provide REST endpoints for workflow submission, knowledge query, context card retrieval, and source management
+- Support WebSocket for real-time workflow progress updates
+- Integrate with Keycloak OIDC for authentication
+- Enforce domain-scoped policies from auth.domain_policy
+- Proxy requests to gRPC services (PersistenceService, KnowledgeQueryService, CacheService)
+- Publish workflow requests to events.orchestrator.v1
+- Implement rate limiting, request validation, and CORS
+
+% Output Format
+- Generate Python module at src/services/api_gateway.py
+- Include comprehensive type hints
+- Use async/await patterns
+
+% Dependencies
+- proto_schemas_Python.prompt
+- grpc_client_base_Python.prompt
+- kafka_producer_base_Python.prompt
+
+% Implementation Notes
+- Use FastAPI framework
+- Implement WebSocket support
+- Use Keycloak Python adapter for OIDC

@@ -1,0 +1,26 @@
+% Purpose: Persistence service implementing gRPC PersistenceService for database operations
+
+% Requirements
+- Implement gRPC service for CRUD operations on all Postgres tables using asyncpg connection pool
+- Implement PersistenceService from Protobuf schemas
+- Provide methods for Source, Artifact, EvidenceUnit, ContextCard, Thread, Episode management
+- Enforce foreign key constraints
+- Validate mandatory grounding locators
+- Manage transactions
+- Publish change events to events.kb.v1
+- Include pagination, filtering, and bulk operations
+
+% Output Format
+- Generate Python module at src/services/persistence_service.py
+- Include comprehensive type hints
+- Use async/await patterns
+
+% Dependencies
+- proto_schemas_Python.prompt
+- grpc_server_base_Python.prompt
+- kafka_producer_base_Python.prompt
+
+% Implementation Notes
+- Use asyncpg for PostgreSQL connection
+- Implement proper error handling
+- Use connection pooling

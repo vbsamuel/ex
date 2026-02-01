@@ -1,0 +1,23 @@
+% Purpose: Environment configuration template documenting all required environment variables
+
+% Requirements
+- Create environment variable template file (.env.example)
+- Document all configuration variables
+- Include: DATABASE_URL, KAFKA_BOOTSTRAP_SERVERS, SCHEMA_REGISTRY_URL, MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, MEMGRAPH_HOST, CLICKHOUSE_HOST, KEYCLOAK_URL, KEYCLOAK_REALM, DRAGONFLY_HOST, OLLAMA_HOST
+- Include service ports
+- Include telemetry configuration
+- Include comments explaining each variable
+- Provide example values for local development
+
+% Output Format
+- Generate .env.example file
+- One variable per line in format: VARIABLE_NAME=example_value
+- Include comment lines with # prefix
+
+% Dependencies
+- None (foundational module)
+
+% Implementation Notes
+- Use sensible defaults for development
+- Include all required variables
+- Document optional variables

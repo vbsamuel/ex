@@ -1,0 +1,28 @@
+% Purpose: Database schema initialization for system-of-record with mandatory schemas, tables, and pgvector configuration
+
+% Requirements
+- Create PostgreSQL migration for all required schemas: core, sync, metrics, auth
+- Create tables: sources, artifacts, evidence_units, threads, context_cards, embeddings, episodes, episode_steps, sync_log, device_sync_state, snapshots, domain_policy
+- Set up pgvector extension with vector dimension exactly 768
+- Create HNSW indexes for embeddings
+- Define foreign key constraints
+- Create audit triggers
+- Set up connection pooling
+- Ensure mini_brain database, user, and permissions
+
+% Output Format
+- Generate SQL migration file at migrations/001_init_schema.sql
+- Use standard PostgreSQL SQL syntax
+- Include idempotent CREATE statements (IF NOT EXISTS)
+
+% Context
+This is the foundational database schema for the IE-X system. All persistence operations will use these tables.
+
+% Dependencies
+- proto_schemas_Python.prompt (for understanding data model)
+
+% Implementation Notes
+- Use appropriate data types for each column
+- Create indexes on frequently queried columns
+- Use JSONB for flexible schema fields where appropriate
+- Ensure vector column uses the correct dimension (768)

@@ -1,0 +1,21 @@
+% Purpose: Python dependency specification listing all required packages with version constraints
+
+% Requirements
+- Define all Python dependencies in requirements.txt format
+- Include: asyncpg, grpcio, grpcio-tools, confluent-kafka-python, aiokafka, fastapi, uvicorn, redis, boto3, yt-dlp, pypdf, python-docx, scikit-learn, pydantic, ollama, pymgclient, opentelemetry-api, opentelemetry-sdk, opentelemetry-instrumentation-grpc, opentelemetry-instrumentation-fastapi, prometheus-client, python-keycloak
+- Include version constraints for security and compatibility
+- Pin major versions but allow minor/patch updates
+- Ensure compatibility between dependencies
+
+% Output Format
+- Generate requirements.txt file
+- One package per line in format: package>=min_version,<max_version
+- Include comments for package categories
+
+% Dependencies
+- None (foundational module)
+
+% Implementation Notes
+- Use compatible version ranges
+- Consider security advisories
+- Test dependency resolution

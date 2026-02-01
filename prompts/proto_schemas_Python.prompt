@@ -1,0 +1,27 @@
+% Purpose: Foundational Protobuf schemas defining all message types for Kafka events, gRPC services, and domain models
+
+% Requirements
+- Define comprehensive Protobuf schema definitions for the IE-X system
+- Include event types: StepRequested, StepCompleted, KnowledgeEvent
+- Include domain models: Source, Artifact, EvidenceUnit, ContextCard, Thread
+- Define gRPC service definitions: PersistenceService, KnowledgeQueryService, AIEngineService, CacheService, AuthService
+- Define Kafka message schemas
+- All schemas must be registered with Confluent Schema Registry
+- Include mandatory grounding locators (video timecodes, document offsets, DOM paths, image bboxes) for Evidence Units
+
+% Output Format
+- Generate a single .proto file at proto/minibrain.proto
+- Use proto3 syntax
+- Follow Google Protobuf style guide
+
+% Context
+This is the foundational schema definition for the entire IE-X system. All services and agents will use these message types for communication via Kafka and gRPC.
+
+% Dependencies
+- None (foundational module)
+
+% Implementation Notes
+- Use proper field numbering for backwards compatibility
+- Include appropriate message nesting for complex types
+- Ensure all grounding locators are mandatory fields (not optional)
+- Include timestamps and versioning fields where appropriate

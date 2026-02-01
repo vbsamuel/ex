@@ -1,0 +1,26 @@
+% Purpose: AI Engine service entry point starting the gRPC server with Ollama client
+
+% Requirements
+- Initialize Ollama client connections
+- Start gRPC server on port 50053
+- Register AIEngineService implementation
+- Configure OpenTelemetry tracing
+- Set up signal handlers for graceful shutdown
+- Validate model availability on startup
+- Implement health checks
+- Load engine profiles from configuration
+
+% Output Format
+- Generate Python module at src/services/ai_engine_adapter_main.py
+- Include comprehensive type hints
+- Provide if __name__ == "__main__" entry point
+
+% Dependencies
+- ai_engine_adapter_Python.prompt
+- grpc_server_base_Python.prompt
+- telemetry_collector_Python.prompt
+
+% Implementation Notes
+- Use asyncio for async runtime
+- Implement proper signal handling
+- Include model availability checks

@@ -1,0 +1,26 @@
+% Purpose: Base gRPC server class providing service registration, health checks, and Protobuf serialization
+
+% Requirements
+- Create abstract base class for all gRPC services
+- Implement automatic service registration
+- Add reflection support
+- Integrate OpenTelemetry instrumentation
+- Implement connection pooling
+- Add graceful shutdown handling
+- Implement error mapping
+- Add interceptors for auth, logging, metrics, and retry logic
+- Provide type-safe Protobuf message handling
+- Support streaming
+
+% Output Format
+- Generate Python module at src/shared/grpc_server_base.py
+- Use Python ABC (Abstract Base Class)
+- Include comprehensive type hints
+
+% Dependencies
+- proto_schemas_Python.prompt
+
+% Implementation Notes
+- Use grpcio and grpcio-tools
+- Implement proper async/await patterns
+- Include health check endpoint

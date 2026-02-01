@@ -1,0 +1,24 @@
+% Purpose: Base Kafka producer class with Protobuf serialization and Schema Registry integration
+
+% Requirements
+- Create abstract base class for Kafka producers using confluent-kafka-python
+- Implement Protobuf SerDes using Schema Registry
+- Add automatic schema registration and validation
+- Configure producer (acks, retries, idempotence)
+- Implement partitioning strategies
+- Support async send with callbacks
+- Add DLQ routing for failed messages
+- Include batch optimization and compression
+
+% Output Format
+- Generate Python module at src/shared/kafka_producer_base.py
+- Use Python ABC (Abstract Base Class)
+- Include comprehensive type hints
+
+% Dependencies
+- proto_schemas_Python.prompt
+
+% Implementation Notes
+- Use confluent-kafka for producer
+- Integrate with Confluent Schema Registry
+- Implement proper error handling

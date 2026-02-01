@@ -1,0 +1,27 @@
+% Purpose: Knowledge query service implementing semantic search and retrieval via gRPC
+
+% Requirements
+- Implement KnowledgeQueryService from Protobuf schemas
+- Provide semantic search using pgvector cosine similarity on embeddings (HNSW index)
+- Support hybrid search combining full-text and vector search
+- Implement context card retrieval with evidence expansion
+- Support thread navigation
+- Include query result ranking
+- Use embedding cache (emb namespace) and retrieval cache (ret namespace) with stampede prevention
+- Implement pagination, filtering by source/type/date, and result scoring
+
+% Output Format
+- Generate Python module at src/services/knowledge_query_service.py
+- Include comprehensive type hints
+- Use async/await patterns
+
+% Dependencies
+- proto_schemas_Python.prompt
+- grpc_server_base_Python.prompt
+- grpc_client_base_Python.prompt
+- cache_contract_Python.prompt
+
+% Implementation Notes
+- Use asyncpg for database queries
+- Use pgvector for similarity search
+- Implement query optimization

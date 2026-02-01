@@ -1,0 +1,27 @@
+% Purpose: Document loader agent extracting text and structure from PDFs and other documents
+
+% Requirements
+- Create Kafka consumer agent (ingest.document_loader.v1)
+- Process document artifacts (PDF, DOCX, TXT)
+- Use pypdf for PDF parsing with page-level and character offset extraction
+- Create EvidenceUnit records with document locators (page number, char_offset_start, char_offset_end)
+- Preserve document structure (headings, lists, tables)
+- Extract metadata (author, creation date)
+- Handle OCR for scanned documents
+- Store artifacts in MinIO
+
+% Output Format
+- Generate Python module at src/agents/document_loader.py
+- Include comprehensive type hints
+- Use async/await patterns
+
+% Dependencies
+- proto_schemas_Python.prompt
+- kafka_consumer_base_Python.prompt
+- kafka_producer_base_Python.prompt
+- grpc_client_base_Python.prompt
+
+% Implementation Notes
+- Use pypdf for PDF parsing
+- Use python-docx for DOCX parsing
+- Implement OCR fallback

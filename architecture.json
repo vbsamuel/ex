@@ -1,0 +1,1555 @@
+[
+  {
+    "reason": "Foundational Protobuf schemas defining all message types for Kafka events, gRPC services, and domain models",
+    "description": "Comprehensive Protobuf schema definitions for the IE-X system including event types (StepRequested, StepCompleted, KnowledgeEvent), domain models (Source, Artifact, EvidenceUnit, ContextCard, Thread), gRPC service definitions (PersistenceService, KnowledgeQueryService, AIEngineService, CacheService, AuthService), and Kafka message schemas. All schemas registered with Confluent Schema Registry. Includes mandatory grounding locators (video timecodes, document offsets, DOM paths, image bboxes) for Evidence Units.",
+    "dependencies": [],
+    "priority": 1,
+    "filename": "proto_schemas_Python.prompt",
+    "filepath": "proto/minibrain.proto",
+    "tags": [
+      "protobuf",
+      "schema",
+      "foundational"
+    ],
+    "context_urls": [
+      {
+        "url": "https://protobuf.dev/getting-started/pythontutorial/",
+        "purpose": "Python Protobuf tutorial for message definitions"
+      },
+      {
+        "url": "https://protobuf.dev/programming-guides/proto3/",
+        "purpose": "Proto3 language guide for syntax and best practices"
+      },
+      {
+        "url": "https://grpc.io/docs/languages/python/quickstart/",
+        "purpose": "gRPC Python quickstart for service definitions"
+      }
+    ],
+    "interface": {
+      "type": "config",
+      "config": {
+        "keys": [
+          {
+            "name": "SCHEMA_REGISTRY_URL",
+            "type": "string",
+            "default": "http://localhost:8081",
+            "required": true,
+            "source": "env"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Infrastructure orchestration defining all 15 services with deterministic port mappings and health checks",
+    "description": "Docker Compose configuration for complete IE-X stack: Kafka (9092), Schema Registry (8081), Postgres with pgvector (5432), MinIO (9000/9001), Memgraph (7687), ClickHouse (8123/9009), Keycloak (8080), Dragonfly cache (6379), OpenTelemetry Collector (4317/4318), Prometheus (9090), Grafana (3000). Includes volume mounts, network configuration, environment variables, and dependency ordering. All services configured for development and production profiles.",
+    "dependencies": [],
+    "priority": 2,
+    "filename": "docker_compose_YAML.prompt",
+    "filepath": "docker-compose.yml",
+    "tags": [
+      "infrastructure",
+      "docker",
+      "foundational"
+    ],
+    "context_urls": [
+      {
+        "url": "https://docs.docker.com/compose/compose-file/",
+        "purpose": "Docker Compose file format reference"
+      },
+      {
+        "url": "https://docs.confluent.io/platform/current/installation/docker/config-reference.html",
+        "purpose": "Kafka and Schema Registry Docker configuration"
+      }
+    ],
+    "interface": {
+      "type": "config",
+      "config": {
+        "keys": [
+          {
+            "name": "COMPOSE_PROJECT_NAME",
+            "type": "string",
+            "default": "iex",
+            "required": false,
+            "source": "env"
+          },
+          {
+            "name": "COMPOSE_PROFILES",
+            "type": "string",
+            "default": "dev",
+            "required": false,
+            "source": "env"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Database schema initialization for system-of-record with mandatory schemas, tables, and pgvector configuration",
+    "description": "PostgreSQL migration creating all required schemas (core, sync, metrics, auth) and tables (sources, artifacts, evidence_units, threads, context_cards, embeddings, episodes, episode_steps, sync_log, device_sync_state, snapshots, domain_policy). Includes pgvector extension setup with vector dimension exactly 768, HNSW indexes for embeddings, foreign key constraints, and audit triggers. Sets up connection pooling and ensures mini_brain database, user, and permissions.",
+    "dependencies": [
+      "proto_schemas_Python.prompt"
+    ],
+    "priority": 3,
+    "filename": "postgres_migration_SQL.prompt",
+    "filepath": "migrations/001_init_schema.sql",
+    "tags": [
+      "database",
+      "postgres",
+      "foundational"
+    ],
+    "context_urls": [
+      {
+        "url": "https://github.com/pgvector/pgvector#installation",
+        "purpose": "pgvector extension installation and setup"
+      },
+      {
+        "url": "https://www.postgresql.org/docs/current/sql-createtable.html",
+        "purpose": "PostgreSQL CREATE TABLE syntax reference"
+      }
+    ],
+    "interface": {
+      "type": "config",
+      "config": {
+        "keys": [
+          {
+            "name": "POSTGRES_DB",
+            "type": "string",
+            "default": "mini_brain",
+            "required": true,
+            "source": "env"
+          },
+          {
+            "name": "POSTGRES_USER",
+            "type": "string",
+            "default": "mini_brain",
+            "required": true,
+            "source": "env"
+          },
+          {
+            "name": "POSTGRES_PASSWORD",
+            "type": "string",
+            "default": "mini_brain_pw",
+            "required": true,
+            "source": "env"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Cache contract specification defining all 7 namespaces with exact key formats, TTLs, and stampede prevention logic",
+    "description": "Dragonfly cache contract module defining namespaces (ctx, ret, emb, art, sync, plan, tts) with precise key formats including domain_id, query_sha256, retrieval_policy_hash, corpus_hash versioning. Implements stampede prevention with lock key format mini-brain:lock:{namespace}:{domain_id}:{hash}:v1, lock_ttl_ms=30000, retry max_attempts=20 with jitter 50-150ms. Includes cache invalidation strategies and consistency guarantees.",
+    "dependencies": [
+      "proto_schemas_Python.prompt"
+    ],
+    "priority": 4,
+    "filename": "cache_contract_Python.prompt",
+    "filepath": "src/shared/cache_contract.py",
+    "tags": [
+      "cache",
+      "dragonfly",
+      "foundational"
+    ],
+    "context_urls": [
+      {
+        "url": "https://www.dragonflydb.io/docs/getting-started",
+        "purpose": "Dragonfly setup and basic operations"
+      },
+      {
+        "url": "https://redis.io/docs/manual/patterns/distributed-locks/",
+        "purpose": "Distributed locking pattern for stampede prevention"
+      }
+    ],
+    "interface": {
+      "type": "module",
+      "module": {
+        "functions": [
+          {
+            "name": "get_cache_key",
+            "signature": "(namespace: str, **kwargs) -> str",
+            "returns": "Formatted cache key"
+          },
+          {
+            "name": "acquire_lock",
+            "signature": "async (key: str, ttl_ms: int) -> bool",
+            "returns": "Lock acquisition success"
+          },
+          {
+            "name": "release_lock",
+            "signature": "async (key: str) -> None",
+            "returns": "None"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Base gRPC server class providing service registration, health checks, and Protobuf serialization",
+    "description": "Abstract base class for all gRPC services with automatic service registration, reflection support, OpenTelemetry instrumentation, connection pooling, graceful shutdown handling, and error mapping. Implements interceptors for auth, logging, metrics, and retry logic. Provides type-safe Protobuf message handling and streaming support.",
+    "dependencies": [
+      "proto_schemas_Python.prompt"
+    ],
+    "priority": 5,
+    "filename": "grpc_server_base_Python.prompt",
+    "filepath": "src/shared/grpc_server_base.py",
+    "tags": [
+      "grpc",
+      "infrastructure",
+      "base"
+    ],
+    "context_urls": [
+      {
+        "url": "https://grpc.io/docs/languages/python/basics/",
+        "purpose": "gRPC Python server implementation basics"
+      },
+      {
+        "url": "https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/grpc/grpc.html",
+        "purpose": "OpenTelemetry gRPC instrumentation"
+      }
+    ],
+    "interface": {
+      "type": "module",
+      "module": {
+        "functions": [
+          {
+            "name": "GrpcServerBase",
+            "signature": "class GrpcServerBase(ABC)",
+            "returns": "Base server instance"
+          },
+          {
+            "name": "start",
+            "signature": "async (port: int) -> None",
+            "returns": "None",
+            "sideEffects": "Starts gRPC server"
+          },
+          {
+            "name": "stop",
+            "signature": "async (grace_period: int = 10) -> None",
+            "returns": "None",
+            "sideEffects": "Graceful shutdown"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Base gRPC client class providing connection management, retry logic, and circuit breaking",
+    "description": "Abstract base class for gRPC clients with connection pooling, exponential backoff retry, circuit breaker pattern, request timeout configuration, and health check integration. Handles channel creation, SSL/TLS configuration, load balancing, and automatic reconnection. Provides async context manager interface.",
+    "dependencies": [
+      "proto_schemas_Python.prompt"
+    ],
+    "priority": 6,
+    "filename": "grpc_client_base_Python.prompt",
+    "filepath": "src/shared/grpc_client_base.py",
+    "tags": [
+      "grpc",
+      "infrastructure",
+      "base"
+    ],
+    "context_urls": [
+      {
+        "url": "https://grpc.io/docs/languages/python/basics/",
+        "purpose": "gRPC Python client implementation"
+      },
+      {
+        "url": "https://github.com/grpc/grpc/blob/master/examples/python/retry/README.md",
+        "purpose": "gRPC retry policy configuration"
+      }
+    ],
+    "interface": {
+      "type": "module",
+      "module": {
+        "functions": [
+          {
+            "name": "GrpcClientBase",
+            "signature": "class GrpcClientBase(ABC)",
+            "returns": "Base client instance"
+          },
+          {
+            "name": "__aenter__",
+            "signature": "async () -> Self",
+            "returns": "Client instance"
+          },
+          {
+            "name": "__aexit__",
+            "signature": "async (...) -> None",
+            "returns": "None",
+            "sideEffects": "Closes connection"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Base Kafka producer class with Protobuf serialization and Schema Registry integration",
+    "description": "Abstract base class for Kafka producers with confluent-kafka-python, Protobuf SerDes using Schema Registry, automatic schema registration and validation, producer configuration (acks, retries, idempotence), partitioning strategies, async send with callbacks, and DLQ routing for failed messages. Includes batch optimization and compression.",
+    "dependencies": [
+      "proto_schemas_Python.prompt"
+    ],
+    "priority": 7,
+    "filename": "kafka_producer_base_Python.prompt",
+    "filepath": "src/shared/kafka_producer_base.py",
+    "tags": [
+      "kafka",
+      "infrastructure",
+      "base"
+    ],
+    "context_urls": [
+      {
+        "url": "https://docs.confluent.io/kafka-clients/python/current/overview.html",
+        "purpose": "confluent-kafka-python producer documentation"
+      },
+      {
+        "url": "https://docs.confluent.io/platform/current/schema-registry/serdes-develop/serdes-protobuf.html",
+        "purpose": "Protobuf serializer for Kafka with Schema Registry"
+      }
+    ],
+    "interface": {
+      "type": "module",
+      "module": {
+        "functions": [
+          {
+            "name": "KafkaProducerBase",
+            "signature": "class KafkaProducerBase(ABC)",
+            "returns": "Base producer instance"
+          },
+          {
+            "name": "send",
+            "signature": "async (topic: str, message: Message, key: str) -> None",
+            "returns": "None",
+            "sideEffects": "Publishes message to Kafka"
+          },
+          {
+            "name": "flush",
+            "signature": "async (timeout: float = 10.0) -> None",
+            "returns": "None"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Base Kafka consumer class with Protobuf deserialization and event processing patterns",
+    "description": "Abstract base class for Kafka consumers with aiokafka async consumer, Protobuf deserializer using Schema Registry, consumer group management, offset commit strategies (at-least-once, at-most-once), rebalancing handlers, message batching, graceful shutdown, and DLQ publishing for poison pills. Implements backpressure handling and health checks.",
+    "dependencies": [
+      "proto_schemas_Python.prompt",
+      "kafka_producer_base_Python.prompt"
+    ],
+    "priority": 8,
+    "filename": "kafka_consumer_base_Python.prompt",
+    "filepath": "src/shared/kafka_consumer_base.py",
+    "tags": [
+      "kafka",
+      "infrastructure",
+      "base"
+    ],
+    "context_urls": [
+      {
+        "url": "https://aiokafka.readthedocs.io/en/stable/consumer.html",
+        "purpose": "aiokafka async consumer usage"
+      },
+      {
+        "url": "https://docs.confluent.io/platform/current/schema-registry/serdes-develop/serdes-protobuf.html",
+        "purpose": "Protobuf deserializer for Kafka"
+      }
+    ],
+    "interface": {
+      "type": "module",
+      "module": {
+        "functions": [
+          {
+            "name": "KafkaConsumerBase",
+            "signature": "class KafkaConsumerBase(ABC)",
+            "returns": "Base consumer instance"
+          },
+          {
+            "name": "start",
+            "signature": "async () -> None",
+            "returns": "None",
+            "sideEffects": "Starts consuming messages"
+          },
+          {
+            "name": "process_message",
+            "signature": "async (message: Message) -> None",
+            "returns": "None",
+            "errors": [
+              "ValidationError",
+              "DeserializationError"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Telemetry collector aggregating OpenTelemetry traces, metrics, and logs to ClickHouse",
+    "description": "OpenTelemetry Collector configuration and Python service publishing to events.metrics.v1 Kafka topic. Receives traces (4317/4318), metrics, and logs, processes with batch and sampling processors, exports to ClickHouse for storage and Prometheus for real-time metrics. Includes span enrichment, resource detection, and correlation IDs for distributed tracing across all agents and services.",
+    "dependencies": [
+      "proto_schemas_Python.prompt",
+      "kafka_producer_base_Python.prompt"
+    ],
+    "priority": 9,
+    "filename": "telemetry_collector_Python.prompt",
+    "filepath": "src/shared/telemetry_collector.py",
+    "tags": [
+      "telemetry",
+      "observability",
+      "infrastructure"
+    ],
+    "context_urls": [
+      {
+        "url": "https://opentelemetry.io/docs/collector/configuration/",
+        "purpose": "OpenTelemetry Collector configuration reference"
+      },
+      {
+        "url": "https://opentelemetry-python.readthedocs.io/en/latest/",
+        "purpose": "OpenTelemetry Python SDK documentation"
+      }
+    ],
+    "interface": {
+      "type": "module",
+      "module": {
+        "functions": [
+          {
+            "name": "init_telemetry",
+            "signature": "(service_name: str) -> None",
+            "returns": "None",
+            "sideEffects": "Initializes OpenTelemetry tracing"
+          },
+          {
+            "name": "publish_metric",
+            "signature": "async (metric_event: MetricEvent) -> None",
+            "returns": "None"
+          },
+          {
+            "name": "get_tracer",
+            "signature": "(name: str) -> Tracer",
+            "returns": "Tracer instance"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Persistence service implementing gRPC PersistenceService for database operations",
+    "description": "gRPC service for CRUD operations on all Postgres tables using asyncpg connection pool. Implements PersistenceService from Protobuf schemas with methods for Source, Artifact, EvidenceUnit, ContextCard, Thread, Episode management. Enforces foreign key constraints, validates mandatory grounding locators, manages transactions, and publishes change events to events.kb.v1. Includes pagination, filtering, and bulk operations.",
+    "dependencies": [
+      "proto_schemas_Python.prompt",
+      "grpc_server_base_Python.prompt",
+      "kafka_producer_base_Python.prompt"
+    ],
+    "priority": 10,
+    "filename": "persistence_service_Python.prompt",
+    "filepath": "src/services/persistence_service.py",
+    "tags": [
+      "service",
+      "database",
+      "grpc"
+    ],
+    "context_urls": [
+      {
+        "url": "https://magicstack.github.io/asyncpg/current/",
+        "purpose": "asyncpg PostgreSQL driver documentation"
+      },
+      {
+        "url": "https://github.com/pgvector/pgvector-python",
+        "purpose": "pgvector Python client for vector operations"
+      }
+    ],
+    "interface": {
+      "type": "api",
+      "api": {
+        "endpoints": [
+          {
+            "method": "gRPC",
+            "path": "PersistenceService/CreateArtifact",
+            "auth": "oidc"
+          },
+          {
+            "method": "gRPC",
+            "path": "PersistenceService/GetEvidenceUnits",
+            "auth": "oidc"
+          },
+          {
+            "method": "gRPC",
+            "path": "PersistenceService/CreateContextCard",
+            "auth": "oidc"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Cache service implementing gRPC CacheService with namespace-aware operations",
+    "description": "gRPC service wrapping Dragonfly cache using cache_contract definitions. Implements CacheService with get/set/delete operations respecting namespace TTLs and key formats. Provides distributed lock acquisition with stampede prevention (jitter 50-150ms, max 20 retries), cache warming, invalidation cascades, and Redis protocol compatibility. Uses async redis-py client.",
+    "dependencies": [
+      "proto_schemas_Python.prompt",
+      "grpc_server_base_Python.prompt",
+      "cache_contract_Python.prompt"
+    ],
+    "priority": 11,
+    "filename": "cache_service_Python.prompt",
+    "filepath": "src/services/cache_service.py",
+    "tags": [
+      "service",
+      "cache",
+      "grpc"
+    ],
+    "context_urls": [
+      {
+        "url": "https://redis.readthedocs.io/en/stable/",
+        "purpose": "redis-py async client documentation"
+      },
+      {
+        "url": "https://www.dragonflydb.io/docs/command-reference/generic/get",
+        "purpose": "Dragonfly command reference"
+      }
+    ],
+    "interface": {
+      "type": "api",
+      "api": {
+        "endpoints": [
+          {
+            "method": "gRPC",
+            "path": "CacheService/Get",
+            "auth": "none"
+          },
+          {
+            "method": "gRPC",
+            "path": "CacheService/Set",
+            "auth": "none"
+          },
+          {
+            "method": "gRPC",
+            "path": "CacheService/AcquireLock",
+            "auth": "none"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "AI Engine adapter providing unified interface to Ollama (default) and optional cloud engines",
+    "description": "Service implementing AIEngineService gRPC interface with pluggable engine backends. Default Ollama client for writer, reviewer, and embedding models. Supports configurable engine profiles with model selection, temperature, max_tokens, and timeout. Implements streaming for long-form generation, batch embedding, and model health checks. Enforces grounding requirement by validating citations in all generated content.",
+    "dependencies": [
+      "proto_schemas_Python.prompt",
+      "grpc_server_base_Python.prompt"
+    ],
+    "priority": 12,
+    "filename": "ai_engine_adapter_Python.prompt",
+    "filepath": "src/services/ai_engine_adapter.py",
+    "tags": [
+      "service",
+      "ai",
+      "grpc"
+    ],
+    "context_urls": [
+      {
+        "url": "https://github.com/ollama/ollama-python",
+        "purpose": "Ollama Python client library"
+      },
+      {
+        "url": "https://ollama.com/blog/embedding-models",
+        "purpose": "Ollama embedding models documentation"
+      }
+    ],
+    "interface": {
+      "type": "api",
+      "api": {
+        "endpoints": [
+          {
+            "method": "gRPC",
+            "path": "AIEngineService/Generate",
+            "auth": "none"
+          },
+          {
+            "method": "gRPC",
+            "path": "AIEngineService/GenerateEmbedding",
+            "auth": "none"
+          },
+          {
+            "method": "gRPC",
+            "path": "AIEngineService/StreamGenerate",
+            "auth": "none"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Knowledge query service implementing semantic search and retrieval via gRPC",
+    "description": "gRPC service implementing KnowledgeQueryService from Protobuf schemas. Provides semantic search using pgvector cosine similarity on embeddings (HNSW index), hybrid search combining full-text and vector search, context card retrieval with evidence expansion, thread navigation, and query result ranking. Uses embedding cache (emb namespace) and retrieval cache (ret namespace) with stampede prevention. Implements pagination, filtering by source/type/date, and result scoring.",
+    "dependencies": [
+      "proto_schemas_Python.prompt",
+      "grpc_server_base_Python.prompt",
+      "grpc_client_base_Python.prompt",
+      "cache_contract_Python.prompt"
+    ],
+    "priority": 13,
+    "filename": "knowledge_query_service_Python.prompt",
+    "filepath": "src/services/knowledge_query_service.py",
+    "tags": [
+      "service",
+      "search",
+      "grpc"
+    ],
+    "context_urls": [
+      {
+        "url": "https://github.com/pgvector/pgvector#querying",
+        "purpose": "pgvector similarity search queries"
+      },
+      {
+        "url": "https://www.postgresql.org/docs/current/textsearch.html",
+        "purpose": "PostgreSQL full-text search"
+      }
+    ],
+    "interface": {
+      "type": "api",
+      "api": {
+        "endpoints": [
+          {
+            "method": "gRPC",
+            "path": "KnowledgeQueryService/SemanticSearch",
+            "auth": "oidc"
+          },
+          {
+            "method": "gRPC",
+            "path": "KnowledgeQueryService/GetContextCard",
+            "auth": "oidc"
+          },
+          {
+            "method": "gRPC",
+            "path": "KnowledgeQueryService/GetThread",
+            "auth": "oidc"
+          },
+          {
+            "method": "gRPC",
+            "path": "KnowledgeQueryService/HybridSearch",
+            "auth": "oidc"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "WhatsApp link resolver agent extracting YouTube URLs from WhatsApp messages",
+    "description": "Kafka consumer agent (ingest.whatsapp_link_resolver.v1) subscribing to events.steps.requested.v1, filtering for WhatsApp ingest tasks. Extracts YouTube URLs from message content using regex patterns, validates URLs, and publishes StepCompleted events with extracted links to events.steps.completed.v1. Handles link previews, shortened URLs, and timestamp fragments. No direct agent calls - pure event-driven coordination.",
+    "dependencies": [
+      "proto_schemas_Python.prompt",
+      "kafka_consumer_base_Python.prompt",
+      "kafka_producer_base_Python.prompt"
+    ],
+    "priority": 14,
+    "filename": "agent_whatsapp_resolver_Python.prompt",
+    "filepath": "src/agents/whatsapp_resolver.py",
+    "tags": [
+      "agent",
+      "ingest",
+      "whatsapp"
+    ],
+    "context_urls": [
+      {
+        "url": "https://github.com/tkem/cachetools",
+        "purpose": "Caching library for deduplication"
+      }
+    ],
+    "interface": {
+      "type": "message",
+      "message": {
+        "topics": [
+          {
+            "name": "events.steps.requested.v1",
+            "direction": "subscribe",
+            "schema": "StepRequested"
+          },
+          {
+            "name": "events.steps.completed.v1",
+            "direction": "publish",
+            "schema": "StepCompleted"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "YouTube fetch agent downloading video metadata and audio for transcription",
+    "description": "Kafka consumer agent (ingest.youtube_fetch.v1) processing YouTube URLs from StepCompleted events. Uses yt-dlp to fetch video metadata (title, description, duration, thumbnail) and download audio in best quality. Uploads audio artifacts to MinIO with retention policy, stores metadata in Postgres via PersistenceService gRPC, and publishes completion event with artifact IDs. Handles age-restricted videos, playlists, and live streams.",
+    "dependencies": [
+      "proto_schemas_Python.prompt",
+      "kafka_consumer_base_Python.prompt",
+      "kafka_producer_base_Python.prompt",
+      "grpc_client_base_Python.prompt"
+    ],
+    "priority": 15,
+    "filename": "agent_youtube_fetch_Python.prompt",
+    "filepath": "src/agents/youtube_fetch.py",
+    "tags": [
+      "agent",
+      "ingest",
+      "youtube"
+    ],
+    "context_urls": [
+      {
+        "url": "https://github.com/yt-dlp/yt-dlp#usage-and-options",
+        "purpose": "yt-dlp command-line options and Python API"
+      },
+      {
+        "url": "https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html",
+        "purpose": "boto3 S3 client for MinIO artifact storage"
+      }
+    ],
+    "interface": {
+      "type": "message",
+      "message": {
+        "topics": [
+          {
+            "name": "events.steps.requested.v1",
+            "direction": "subscribe",
+            "schema": "StepRequested"
+          },
+          {
+            "name": "events.steps.completed.v1",
+            "direction": "publish",
+            "schema": "StepCompleted"
+          },
+          {
+            "name": "events.kb.v1",
+            "direction": "publish",
+            "schema": "KnowledgeEvent"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Transcription agent converting audio artifacts to timestamped text using Ollama",
+    "description": "Kafka consumer agent (ai.transcribe_timestamped.v1) processing audio artifacts from MinIO. Uses Ollama Whisper-compatible model via AIEngineService gRPC to generate word-level timestamped transcription. Creates EvidenceUnit records with mandatory video timecode locators (start_ms, end_ms) for each utterance. Handles speaker diarization, punctuation restoration, and confidence scoring. Publishes transcript evidence units to events.kb.v1.",
+    "dependencies": [
+      "proto_schemas_Python.prompt",
+      "kafka_consumer_base_Python.prompt",
+      "kafka_producer_base_Python.prompt",
+      "grpc_client_base_Python.prompt"
+    ],
+    "priority": 16,
+    "filename": "agent_transcribe_Python.prompt",
+    "filepath": "src/agents/transcribe.py",
+    "tags": [
+      "agent",
+      "ai",
+      "transcription"
+    ],
+    "context_urls": [
+      {
+        "url": "https://github.com/openai/whisper",
+        "purpose": "Whisper model architecture and usage"
+      },
+      {
+        "url": "https://ollama.com/library/whisper",
+        "purpose": "Ollama Whisper model deployment"
+      }
+    ],
+    "interface": {
+      "type": "message",
+      "message": {
+        "topics": [
+          {
+            "name": "events.steps.requested.v1",
+            "direction": "subscribe",
+            "schema": "StepRequested"
+          },
+          {
+            "name": "events.steps.completed.v1",
+            "direction": "publish",
+            "schema": "StepCompleted"
+          },
+          {
+            "name": "events.kb.v1",
+            "direction": "publish",
+            "schema": "KnowledgeEvent"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Document loader agent extracting text and structure from PDFs and other documents",
+    "description": "Kafka consumer agent (ingest.document_loader.v1) processing document artifacts (PDF, DOCX, TXT). Uses pypdf for PDF parsing with page-level and character offset extraction. Creates EvidenceUnit records with document locators (page number, char_offset_start, char_offset_end). Preserves document structure (headings, lists, tables), extracts metadata (author, creation date), and handles OCR for scanned documents. Stores artifacts in MinIO.",
+    "dependencies": [
+      "proto_schemas_Python.prompt",
+      "kafka_consumer_base_Python.prompt",
+      "kafka_producer_base_Python.prompt",
+      "grpc_client_base_Python.prompt"
+    ],
+    "priority": 17,
+    "filename": "agent_document_loader_Python.prompt",
+    "filepath": "src/agents/document_loader.py",
+    "tags": [
+      "agent",
+      "ingest",
+      "document"
+    ],
+    "context_urls": [
+      {
+        "url": "https://pypdf.readthedocs.io/en/stable/",
+        "purpose": "pypdf PDF parsing and text extraction"
+      },
+      {
+        "url": "https://python-docx.readthedocs.io/en/latest/",
+        "purpose": "python-docx for DOCX parsing"
+      }
+    ],
+    "interface": {
+      "type": "message",
+      "message": {
+        "topics": [
+          {
+            "name": "events.steps.requested.v1",
+            "direction": "subscribe",
+            "schema": "StepRequested"
+          },
+          {
+            "name": "events.steps.completed.v1",
+            "direction": "publish",
+            "schema": "StepCompleted"
+          },
+          {
+            "name": "events.kb.v1",
+            "direction": "publish",
+            "schema": "KnowledgeEvent"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Thread discovery agent identifying conceptual threads across evidence units using embeddings",
+    "description": "Kafka consumer agent (ai.thread_discovery.v1) analyzing evidence units to discover thematic threads. Generates embeddings via AIEngineService, queries pgvector for similar evidence using HNSW index, clusters related units using DBSCAN or hierarchical clustering, and creates Thread records with evidence membership. Handles temporal ordering, citation graphs, and cross-source relationships. Publishes thread discoveries to events.kb.v1.",
+    "dependencies": [
+      "proto_schemas_Python.prompt",
+      "kafka_consumer_base_Python.prompt",
+      "kafka_producer_base_Python.prompt",
+      "grpc_client_base_Python.prompt"
+    ],
+    "priority": 18,
+    "filename": "agent_thread_discovery_Python.prompt",
+    "filepath": "src/agents/thread_discovery.py",
+    "tags": [
+      "agent",
+      "ai",
+      "knowledge"
+    ],
+    "context_urls": [
+      {
+        "url": "https://scikit-learn.org/stable/modules/clustering.html",
+        "purpose": "scikit-learn clustering algorithms for thread discovery"
+      },
+      {
+        "url": "https://github.com/pgvector/pgvector#querying",
+        "purpose": "pgvector similarity search queries"
+      }
+    ],
+    "interface": {
+      "type": "message",
+      "message": {
+        "topics": [
+          {
+            "name": "events.steps.requested.v1",
+            "direction": "subscribe",
+            "schema": "StepRequested"
+          },
+          {
+            "name": "events.steps.completed.v1",
+            "direction": "publish",
+            "schema": "StepCompleted"
+          },
+          {
+            "name": "events.kb.v1",
+            "direction": "publish",
+            "schema": "KnowledgeEvent"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Context card writer agent generating grounded context cards from evidence and threads",
+    "description": "Kafka consumer agent (ai.context_card_writer.v1) creating ContextCard records from threads and evidence. Uses Ollama writer model via AIEngineService to synthesize narrative summaries with mandatory citations to EvidenceUnit IDs. Enforces grounding validation: every claim must reference specific evidence with locators. Generates structured cards with title, summary, key insights, and evidence citations. Publishes draft cards for review to events.steps.completed.v1.",
+    "dependencies": [
+      "proto_schemas_Python.prompt",
+      "kafka_consumer_base_Python.prompt",
+      "kafka_producer_base_Python.prompt",
+      "grpc_client_base_Python.prompt"
+    ],
+    "priority": 19,
+    "filename": "agent_context_card_writer_Python.prompt",
+    "filepath": "src/agents/context_card_writer.py",
+    "tags": [
+      "agent",
+      "ai",
+      "generation"
+    ],
+    "context_urls": [
+      {
+        "url": "https://github.com/ollama/ollama/blob/main/docs/api.md",
+        "purpose": "Ollama API for text generation"
+      },
+      {
+        "url": "https://docs.pydantic.dev/latest/",
+        "purpose": "Pydantic models for structured output validation"
+      }
+    ],
+    "interface": {
+      "type": "message",
+      "message": {
+        "topics": [
+          {
+            "name": "events.steps.requested.v1",
+            "direction": "subscribe",
+            "schema": "StepRequested"
+          },
+          {
+            "name": "events.steps.completed.v1",
+            "direction": "publish",
+            "schema": "StepCompleted"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Context card reviewer agent validating grounding and quality of generated cards",
+    "description": "Kafka consumer agent (ai.context_card_reviewer.v1) validating ContextCard drafts from writer. Uses Ollama reviewer model to verify citation accuracy, check that all claims reference valid EvidenceUnit IDs with locators, assess coherence and completeness, and suggest improvements. Enforces mandatory grounding constraint: rejects cards with ungrounded claims. Publishes approved cards to events.kb.v1 or revision requests to events.steps.requested.v1.",
+    "dependencies": [
+      "proto_schemas_Python.prompt",
+      "kafka_consumer_base_Python.prompt",
+      "kafka_producer_base_Python.prompt",
+      "grpc_client_base_Python.prompt"
+    ],
+    "priority": 20,
+    "filename": "agent_context_card_reviewer_Python.prompt",
+    "filepath": "src/agents/context_card_reviewer.py",
+    "tags": [
+      "agent",
+      "ai",
+      "validation"
+    ],
+    "context_urls": [
+      {
+        "url": "https://github.com/ollama/ollama/blob/main/docs/modelfile.md",
+        "purpose": "Ollama Modelfile for custom reviewer instructions"
+      }
+    ],
+    "interface": {
+      "type": "message",
+      "message": {
+        "topics": [
+          {
+            "name": "events.steps.requested.v1",
+            "direction": "subscribe",
+            "schema": "StepRequested"
+          },
+          {
+            "name": "events.steps.completed.v1",
+            "direction": "publish",
+            "schema": "StepCompleted"
+          },
+          {
+            "name": "events.kb.v1",
+            "direction": "publish",
+            "schema": "KnowledgeEvent"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Embedding generator agent creating vector embeddings for semantic retrieval",
+    "description": "Kafka consumer agent (ai.embedding_generator.v1) generating embeddings for evidence units, context cards, and queries. Uses Ollama embedding model via AIEngineService with dimension exactly 768. Stores embeddings in core.embeddings table with pgvector, creates HNSW indexes for fast similarity search, and caches embeddings in Dragonfly (emb namespace, TTL 30 days). Handles batch processing, model versioning, and re-embedding on model updates.",
+    "dependencies": [
+      "proto_schemas_Python.prompt",
+      "kafka_consumer_base_Python.prompt",
+      "kafka_producer_base_Python.prompt",
+      "grpc_client_base_Python.prompt",
+      "cache_contract_Python.prompt"
+    ],
+    "priority": 21,
+    "filename": "agent_embedding_generator_Python.prompt",
+    "filepath": "src/agents/embedding_generator.py",
+    "tags": [
+      "agent",
+      "ai",
+      "embeddings"
+    ],
+    "context_urls": [
+      {
+        "url": "https://github.com/ollama/ollama/blob/main/docs/api.md#generate-embeddings",
+        "purpose": "Ollama embeddings API"
+      },
+      {
+        "url": "https://github.com/pgvector/pgvector#indexing",
+        "purpose": "pgvector HNSW index creation and tuning"
+      }
+    ],
+    "interface": {
+      "type": "message",
+      "message": {
+        "topics": [
+          {
+            "name": "events.steps.requested.v1",
+            "direction": "subscribe",
+            "schema": "StepRequested"
+          },
+          {
+            "name": "events.steps.completed.v1",
+            "direction": "publish",
+            "schema": "StepCompleted"
+          },
+          {
+            "name": "events.kb.v1",
+            "direction": "publish",
+            "schema": "KnowledgeEvent"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Sync log writer agent maintaining monotonic log for cross-device synchronization",
+    "description": "Kafka consumer agent (sync.monotonic_log_writer.v1) subscribing to events.kb.v1 and writing all knowledge events to sync.sync_log table with monotonically increasing sequence numbers. Implements cursor-based pagination for sync clients, computes delta snapshots, and manages device_sync_state for each client. Publishes sync snapshots to sync.snapshots table and caches recent deltas in Dragonfly (sync namespace, TTL 60s).",
+    "dependencies": [
+      "proto_schemas_Python.prompt",
+      "kafka_consumer_base_Python.prompt",
+      "grpc_client_base_Python.prompt",
+      "cache_contract_Python.prompt"
+    ],
+    "priority": 22,
+    "filename": "agent_sync_log_writer_Python.prompt",
+    "filepath": "src/agents/sync_log_writer.py",
+    "tags": [
+      "agent",
+      "sync",
+      "persistence"
+    ],
+    "context_urls": [
+      {
+        "url": "https://www.postgresql.org/docs/current/sql-select.html#SQL-ORDERBY",
+        "purpose": "PostgreSQL cursor-based pagination patterns"
+      }
+    ],
+    "interface": {
+      "type": "message",
+      "message": {
+        "topics": [
+          {
+            "name": "events.kb.v1",
+            "direction": "subscribe",
+            "schema": "KnowledgeEvent"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Memgraph projector agent maintaining graph projection of knowledge relationships",
+    "description": "Kafka consumer agent (projector.memgraph_updater.v1) subscribing to events.kb.v1 and projecting knowledge graph to Memgraph. Creates nodes (Source, Artifact, EvidenceUnit, Thread, ContextCard) and edges (CONTAINS, CITES, RELATES_TO, MEMBER_OF) based on knowledge events. Implements Cypher queries for graph traversal, path finding, and subgraph extraction. Handles incremental updates, node merging, and edge upserts.",
+    "dependencies": [
+      "proto_schemas_Python.prompt",
+      "kafka_consumer_base_Python.prompt"
+    ],
+    "priority": 23,
+    "filename": "agent_memgraph_projector_Python.prompt",
+    "filepath": "src/agents/memgraph_projector.py",
+    "tags": [
+      "agent",
+      "graph",
+      "projection"
+    ],
+    "context_urls": [
+      {
+        "url": "https://memgraph.com/docs/querying/clauses",
+        "purpose": "Memgraph Cypher query reference"
+      },
+      {
+        "url": "https://github.com/memgraph/pymgclient",
+        "purpose": "pymgclient Python driver for Memgraph"
+      }
+    ],
+    "interface": {
+      "type": "message",
+      "message": {
+        "topics": [
+          {
+            "name": "events.kb.v1",
+            "direction": "subscribe",
+            "schema": "KnowledgeEvent"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Orchestrator service coordinating workflow execution via Kafka events",
+    "description": "Service implementing workflow wf.youtube_from_whatsapp_to_context_cards.v1 with steps s1-s9. Subscribes to events.orchestrator.v1 for workflow requests, publishes StepRequested events to events.steps.requested.v1 for each workflow step, consumes StepCompleted events from events.steps.completed.v1 to advance workflow state. Maintains Episode and EpisodeStep records in Postgres via PersistenceService. Implements retry logic, timeout handling, and workflow compensation. No direct agent invocation - pure event orchestration.",
+    "dependencies": [
+      "proto_schemas_Python.prompt",
+      "kafka_consumer_base_Python.prompt",
+      "kafka_producer_base_Python.prompt",
+      "grpc_client_base_Python.prompt"
+    ],
+    "priority": 24,
+    "filename": "orchestrator_service_Python.prompt",
+    "filepath": "src/services/orchestrator_service.py",
+    "tags": [
+      "service",
+      "orchestration",
+      "workflow"
+    ],
+    "context_urls": [
+      {
+        "url": "https://www.temporalio.io/blog/workflow-engine-principles",
+        "purpose": "Workflow engine design principles"
+      }
+    ],
+    "interface": {
+      "type": "message",
+      "message": {
+        "topics": [
+          {
+            "name": "events.orchestrator.v1",
+            "direction": "subscribe",
+            "schema": "WorkflowRequest"
+          },
+          {
+            "name": "events.steps.requested.v1",
+            "direction": "publish",
+            "schema": "StepRequested"
+          },
+          {
+            "name": "events.steps.completed.v1",
+            "direction": "subscribe",
+            "schema": "StepCompleted"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "API gateway exposing REST and WebSocket endpoints for external clients",
+    "description": "FastAPI service providing REST API (port 8000) and WebSocket (port 8001) interfaces. REST endpoints for workflow submission, knowledge query, context card retrieval, and source management. WebSocket for real-time workflow progress updates. Integrates with Keycloak OIDC for authentication, enforces domain-scoped policies from auth.domain_policy, proxies requests to gRPC services (PersistenceService, KnowledgeQueryService, CacheService), and publishes workflow requests to events.orchestrator.v1. Implements rate limiting, request validation, and CORS.",
+    "dependencies": [
+      "proto_schemas_Python.prompt",
+      "grpc_client_base_Python.prompt",
+      "kafka_producer_base_Python.prompt"
+    ],
+    "priority": 25,
+    "filename": "api_gateway_Python.prompt",
+    "filepath": "src/services/api_gateway.py",
+    "tags": [
+      "service",
+      "api",
+      "gateway"
+    ],
+    "context_urls": [
+      {
+        "url": "https://fastapi.tiangolo.com/tutorial/",
+        "purpose": "FastAPI framework tutorial"
+      },
+      {
+        "url": "https://fastapi.tiangolo.com/advanced/websockets/",
+        "purpose": "FastAPI WebSocket support"
+      },
+      {
+        "url": "https://www.keycloak.org/docs/latest/securing_apps/index.html#_python_adapter",
+        "purpose": "Keycloak Python OIDC integration"
+      }
+    ],
+    "interface": {
+      "type": "api",
+      "api": {
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/api/v1/workflows",
+            "auth": "oidc",
+            "requestSchema": "WorkflowRequest",
+            "responseSchema": "WorkflowResponse"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/context-cards",
+            "auth": "oidc",
+            "responseSchema": "ContextCard[]"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/search",
+            "auth": "oidc",
+            "responseSchema": "SearchResults"
+          },
+          {
+            "method": "WS",
+            "path": "/ws/workflows/{episode_id}",
+            "auth": "oidc"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Verification gates validating all infrastructure components and their configurations",
+    "description": "Smoke test suite verifying all required infrastructure: Kafka topics (exact names, partitions, retention), Schema Registry subjects, Postgres schemas/tables/pgvector, MinIO bucket operations (put/get), Memgraph CRUD operations (create/query/delete), ClickHouse insert/select, Keycloak OIDC discovery endpoint, Dragonfly PING, and Protobuf codegen output existence. Runs as CLI tool and CI step. Publishes verification results to events.metrics.v1.",
+    "dependencies": [
+      "proto_schemas_Python.prompt",
+      "kafka_producer_base_Python.prompt",
+      "grpc_client_base_Python.prompt"
+    ],
+    "priority": 26,
+    "filename": "verification_gates_Python.prompt",
+    "filepath": "src/tools/verification_gates.py",
+    "tags": [
+      "testing",
+      "verification",
+      "infrastructure"
+    ],
+    "context_urls": [
+      {
+        "url": "https://docs.confluent.io/platform/current/installation/configuration/admin-configs.html",
+        "purpose": "Kafka admin client for topic verification"
+      },
+      {
+        "url": "https://www.postgresql.org/docs/current/app-psql.html",
+        "purpose": "PostgreSQL psql for schema verification"
+      }
+    ],
+    "interface": {
+      "type": "cli",
+      "cli": {
+        "commands": [
+          {
+            "name": "verify",
+            "args": [
+              "--component"
+            ],
+            "flags": [
+              "--verbose",
+              "--fail-fast"
+            ],
+            "exitCodes": [
+              0,
+              1
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Persistence service entry point starting the gRPC server with proper configuration",
+    "description": "Entry point module for persistence_service that initializes asyncpg connection pool, starts gRPC server on port 50051, registers PersistenceService implementation, configures OpenTelemetry tracing, sets up signal handlers for graceful shutdown, and validates database connectivity on startup. Reads configuration from environment variables and implements health checks.",
+    "dependencies": [
+      "persistence_service_Python.prompt",
+      "grpc_server_base_Python.prompt",
+      "telemetry_collector_Python.prompt"
+    ],
+    "priority": 27,
+    "filename": "persistence_main_Python.prompt",
+    "filepath": "src/services/persistence_service_main.py",
+    "tags": [
+      "service",
+      "entrypoint",
+      "infrastructure"
+    ],
+    "context_urls": [
+      {
+        "url": "https://grpc.io/docs/languages/python/basics/#starting-the-server",
+        "purpose": "gRPC server startup patterns"
+      }
+    ],
+    "interface": {
+      "type": "cli",
+      "cli": {
+        "commands": [
+          {
+            "name": "main",
+            "args": [],
+            "flags": [],
+            "exitCodes": [
+              0,
+              1
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Cache service entry point starting the gRPC server with Dragonfly connection",
+    "description": "Entry point module for cache_service that initializes redis-py async client to Dragonfly, starts gRPC server on port 50052, registers CacheService implementation, configures OpenTelemetry tracing, sets up signal handlers for graceful shutdown, and validates cache connectivity on startup. Implements health checks and monitors connection pool status.",
+    "dependencies": [
+      "cache_service_Python.prompt",
+      "grpc_server_base_Python.prompt",
+      "telemetry_collector_Python.prompt"
+    ],
+    "priority": 28,
+    "filename": "cache_main_Python.prompt",
+    "filepath": "src/services/cache_service_main.py",
+    "tags": [
+      "service",
+      "entrypoint",
+      "infrastructure"
+    ],
+    "context_urls": [
+      {
+        "url": "https://redis.readthedocs.io/en/stable/examples/asyncio_examples.html",
+        "purpose": "redis-py async connection patterns"
+      }
+    ],
+    "interface": {
+      "type": "cli",
+      "cli": {
+        "commands": [
+          {
+            "name": "main",
+            "args": [],
+            "flags": [],
+            "exitCodes": [
+              0,
+              1
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "AI Engine service entry point starting the gRPC server with Ollama client",
+    "description": "Entry point module for ai_engine_adapter that initializes Ollama client connections, starts gRPC server on port 50053, registers AIEngineService implementation, configures OpenTelemetry tracing, sets up signal handlers for graceful shutdown, validates model availability on startup, and implements health checks. Loads engine profiles from configuration.",
+    "dependencies": [
+      "ai_engine_adapter_Python.prompt",
+      "grpc_server_base_Python.prompt",
+      "telemetry_collector_Python.prompt"
+    ],
+    "priority": 29,
+    "filename": "ai_engine_main_Python.prompt",
+    "filepath": "src/services/ai_engine_adapter_main.py",
+    "tags": [
+      "service",
+      "entrypoint",
+      "infrastructure"
+    ],
+    "context_urls": [
+      {
+        "url": "https://github.com/ollama/ollama-python#usage",
+        "purpose": "Ollama client initialization"
+      }
+    ],
+    "interface": {
+      "type": "cli",
+      "cli": {
+        "commands": [
+          {
+            "name": "main",
+            "args": [],
+            "flags": [],
+            "exitCodes": [
+              0,
+              1
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Knowledge Query service entry point starting the gRPC server with database connection",
+    "description": "Entry point module for knowledge_query_service that initializes asyncpg connection pool, starts gRPC server on port 50054, registers KnowledgeQueryService implementation, configures OpenTelemetry tracing, sets up signal handlers for graceful shutdown, validates database connectivity and pgvector extension on startup, and implements health checks.",
+    "dependencies": [
+      "knowledge_query_service_Python.prompt",
+      "grpc_server_base_Python.prompt",
+      "telemetry_collector_Python.prompt"
+    ],
+    "priority": 30,
+    "filename": "knowledge_query_main_Python.prompt",
+    "filepath": "src/services/knowledge_query_service_main.py",
+    "tags": [
+      "service",
+      "entrypoint",
+      "infrastructure"
+    ],
+    "context_urls": [
+      {
+        "url": "https://magicstack.github.io/asyncpg/current/usage.html#connection-pools",
+        "purpose": "asyncpg connection pool setup"
+      }
+    ],
+    "interface": {
+      "type": "cli",
+      "cli": {
+        "commands": [
+          {
+            "name": "main",
+            "args": [],
+            "flags": [],
+            "exitCodes": [
+              0,
+              1
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Orchestrator service entry point starting Kafka consumers and producers",
+    "description": "Entry point module for orchestrator_service that initializes Kafka consumer for events.orchestrator.v1, Kafka producers for step events, starts workflow state manager, configures OpenTelemetry tracing, sets up signal handlers for graceful shutdown, validates Kafka connectivity on startup, and implements health checks. Recovers in-flight episodes on startup.",
+    "dependencies": [
+      "orchestrator_service_Python.prompt",
+      "kafka_consumer_base_Python.prompt",
+      "kafka_producer_base_Python.prompt",
+      "telemetry_collector_Python.prompt"
+    ],
+    "priority": 31,
+    "filename": "orchestrator_main_Python.prompt",
+    "filepath": "src/services/orchestrator_service_main.py",
+    "tags": [
+      "service",
+      "entrypoint",
+      "infrastructure"
+    ],
+    "context_urls": [
+      {
+        "url": "https://aiokafka.readthedocs.io/en/stable/examples/consumer_examples.html",
+        "purpose": "aiokafka consumer startup patterns"
+      }
+    ],
+    "interface": {
+      "type": "cli",
+      "cli": {
+        "commands": [
+          {
+            "name": "main",
+            "args": [],
+            "flags": [],
+            "exitCodes": [
+              0,
+              1
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "API Gateway entry point starting FastAPI server with WebSocket support",
+    "description": "Entry point module for api_gateway that initializes FastAPI application, configures CORS, sets up Keycloak OIDC middleware, initializes gRPC client connections to backend services, starts uvicorn server on port 8000, configures OpenTelemetry tracing, sets up signal handlers for graceful shutdown, validates backend service connectivity on startup, and implements health checks.",
+    "dependencies": [
+      "api_gateway_Python.prompt",
+      "grpc_client_base_Python.prompt",
+      "telemetry_collector_Python.prompt"
+    ],
+    "priority": 32,
+    "filename": "api_gateway_main_Python.prompt",
+    "filepath": "src/services/api_gateway_main.py",
+    "tags": [
+      "service",
+      "entrypoint",
+      "infrastructure"
+    ],
+    "context_urls": [
+      {
+        "url": "https://fastapi.tiangolo.com/deployment/manually/",
+        "purpose": "FastAPI manual deployment with uvicorn"
+      },
+      {
+        "url": "https://www.uvicorn.org/#running-programmatically",
+        "purpose": "Uvicorn programmatic startup"
+      }
+    ],
+    "interface": {
+      "type": "cli",
+      "cli": {
+        "commands": [
+          {
+            "name": "main",
+            "args": [],
+            "flags": [],
+            "exitCodes": [
+              0,
+              1
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "reason": "Python dependency specification listing all required packages with version constraints",
+    "description": "Requirements file defining all Python dependencies: asyncpg, grpcio, grpcio-tools, confluent-kafka-python, aiokafka, fastapi, uvicorn, redis, boto3, yt-dlp, pypdf, python-docx, scikit-learn, pydantic, ollama, pymgclient, opentelemetry-api, opentelemetry-sdk, opentelemetry-instrumentation-grpc, opentelemetry-instrumentation-fastapi, prometheus-client, python-keycloak. Includes version constraints for security and compatibility.",
+    "dependencies": [],
+    "priority": 33,
+    "filename": "requirements_Python.prompt",
+    "filepath": "requirements.txt",
+    "tags": [
+      "dependencies",
+      "infrastructure",
+      "foundational"
+    ],
+    "context_urls": [
+      {
+        "url": "https://pip.pypa.io/en/stable/reference/requirements-file-format/",
+        "purpose": "pip requirements file format reference"
+      }
+    ],
+    "interface": {
+      "type": "config",
+      "config": {
+        "keys": []
+      }
+    }
+  },
+  {
+    "reason": "Environment configuration template documenting all required environment variables",
+    "description": "Environment variable template file (.env.example) documenting all configuration: DATABASE_URL, KAFKA_BOOTSTRAP_SERVERS, SCHEMA_REGISTRY_URL, MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, MEMGRAPH_HOST, CLICKHOUSE_HOST, KEYCLOAK_URL, KEYCLOAK_REALM, DRAGONFLY_HOST, OLLAMA_HOST, service ports, and telemetry configuration. Includes comments explaining each variable and example values for local development.",
+    "dependencies": [],
+    "priority": 34,
+    "filename": "env_example_Python.prompt",
+    "filepath": ".env.example",
+    "tags": [
+      "config",
+      "infrastructure",
+      "foundational"
+    ],
+    "context_urls": [
+      {
+        "url": "https://12factor.net/config",
+        "purpose": "Twelve-factor app configuration principles"
+      }
+    ],
+    "interface": {
+      "type": "config",
+      "config": {
+        "keys": [
+          {
+            "name": "DATABASE_URL",
+            "type": "string",
+            "required": true,
+            "source": "env"
+          },
+          {
+            "name": "KAFKA_BOOTSTRAP_SERVERS",
+            "type": "string",
+            "required": true,
+            "source": "env"
+          },
+          {
+            "name": "SCHEMA_REGISTRY_URL",
+            "type": "string",
+            "required": true,
+            "source": "env"
+          }
+        ]
+      }
+    }
+  }
+]

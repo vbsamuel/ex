@@ -1,0 +1,25 @@
+% Purpose: Knowledge Query service entry point starting the gRPC server with database connection
+
+% Requirements
+- Initialize asyncpg connection pool
+- Start gRPC server on port 50054
+- Register KnowledgeQueryService implementation
+- Configure OpenTelemetry tracing
+- Set up signal handlers for graceful shutdown
+- Validate database connectivity and pgvector extension on startup
+- Implement health checks
+
+% Output Format
+- Generate Python module at src/services/knowledge_query_service_main.py
+- Include comprehensive type hints
+- Provide if __name__ == "__main__" entry point
+
+% Dependencies
+- knowledge_query_service_Python.prompt
+- grpc_server_base_Python.prompt
+- telemetry_collector_Python.prompt
+
+% Implementation Notes
+- Use asyncio for async runtime
+- Implement proper signal handling
+- Validate pgvector extension is loaded

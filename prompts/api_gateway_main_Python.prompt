@@ -1,0 +1,27 @@
+% Purpose: API Gateway entry point starting FastAPI server with WebSocket support
+
+% Requirements
+- Initialize FastAPI application
+- Configure CORS
+- Set up Keycloak OIDC middleware
+- Initialize gRPC client connections to backend services
+- Start uvicorn server on port 8000
+- Configure OpenTelemetry tracing
+- Set up signal handlers for graceful shutdown
+- Validate backend service connectivity on startup
+- Implement health checks
+
+% Output Format
+- Generate Python module at src/services/api_gateway_main.py
+- Include comprehensive type hints
+- Provide if __name__ == "__main__" entry point
+
+% Dependencies
+- api_gateway_Python.prompt
+- grpc_client_base_Python.prompt
+- telemetry_collector_Python.prompt
+
+% Implementation Notes
+- Use uvicorn for ASGI server
+- Implement proper signal handling
+- Validate backend connectivity

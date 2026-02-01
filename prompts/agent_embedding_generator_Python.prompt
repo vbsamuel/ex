@@ -1,0 +1,28 @@
+% Purpose: Embedding generator agent creating vector embeddings for semantic retrieval
+
+% Requirements
+- Create Kafka consumer agent (ai.embedding_generator.v1)
+- Generate embeddings for evidence units, context cards, and queries
+- Use Ollama embedding model via AIEngineService with dimension exactly 768
+- Store embeddings in core.embeddings table with pgvector
+- Create HNSW indexes for fast similarity search
+- Cache embeddings in Dragonfly (emb namespace, TTL 30 days)
+- Handle batch processing
+- Support model versioning and re-embedding on model updates
+
+% Output Format
+- Generate Python module at src/agents/embedding_generator.py
+- Include comprehensive type hints
+- Use async/await patterns
+
+% Dependencies
+- proto_schemas_Python.prompt
+- kafka_consumer_base_Python.prompt
+- kafka_producer_base_Python.prompt
+- grpc_client_base_Python.prompt
+- cache_contract_Python.prompt
+
+% Implementation Notes
+- Use Ollama embeddings API
+- Implement batch processing
+- Handle model versioning

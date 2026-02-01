@@ -1,0 +1,274 @@
+version: "1.0"
+
+contexts:
+  # ============================================================
+  # FOUNDATIONAL / INFRASTRUCTURE
+  # ============================================================
+
+  proto_schemas:
+    paths: ["*proto_schemas*"]
+    defaults:
+      outputs:
+        code:
+          path: "proto/minibrain.proto"
+
+  docker_compose:
+    paths: ["*docker_compose*"]
+    defaults:
+      outputs:
+        code:
+          path: "docker-compose.yml"
+
+  postgres_migration:
+    paths: ["*postgres_migration*"]
+    defaults:
+      outputs:
+        code:
+          path: "migrations/001_init_schema.sql"
+
+  requirements:
+    paths: ["*requirements*"]
+    defaults:
+      outputs:
+        code:
+          path: "requirements.txt"
+
+  env_example:
+    paths: ["*env_example*"]
+    defaults:
+      outputs:
+        code:
+          path: ".env.example"
+
+  # ============================================================
+  # SHARED MODULES
+  # ============================================================
+
+  cache_contract:
+    paths: ["*cache_contract*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/shared/cache_contract.py"
+
+  grpc_server_base:
+    paths: ["*grpc_server_base*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/shared/grpc_server_base.py"
+
+  grpc_client_base:
+    paths: ["*grpc_client_base*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/shared/grpc_client_base.py"
+
+  kafka_producer_base:
+    paths: ["*kafka_producer_base*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/shared/kafka_producer_base.py"
+
+  kafka_consumer_base:
+    paths: ["*kafka_consumer_base*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/shared/kafka_consumer_base.py"
+
+  telemetry_collector:
+    paths: ["*telemetry_collector*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/shared/telemetry_collector.py"
+
+  # ============================================================
+  # SERVICES
+  # ============================================================
+
+  persistence_service:
+    paths: ["*persistence_service*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/services/persistence_service.py"
+
+  cache_service:
+    paths: ["*cache_service*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/services/cache_service.py"
+
+  ai_engine_adapter:
+    paths: ["*ai_engine_adapter*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/services/ai_engine_adapter.py"
+
+  knowledge_query_service:
+    paths: ["*knowledge_query_service*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/services/knowledge_query_service.py"
+
+  orchestrator_service:
+    paths: ["*orchestrator_service*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/services/orchestrator_service.py"
+
+  api_gateway:
+    paths: ["*api_gateway*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/services/api_gateway.py"
+
+  # ============================================================
+  # SERVICE ENTRY POINTS
+  # ============================================================
+
+  persistence_main:
+    paths: ["*persistence_main*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/services/persistence_service_main.py"
+
+  cache_main:
+    paths: ["*cache_main*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/services/cache_service_main.py"
+
+  ai_engine_main:
+    paths: ["*ai_engine_main*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/services/ai_engine_adapter_main.py"
+
+  knowledge_query_main:
+    paths: ["*knowledge_query_main*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/services/knowledge_query_service_main.py"
+
+  orchestrator_main:
+    paths: ["*orchestrator_main*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/services/orchestrator_service_main.py"
+
+  api_gateway_main:
+    paths: ["*api_gateway_main*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/services/api_gateway_main.py"
+
+  # ============================================================
+  # AGENTS
+  # ============================================================
+
+  agent_whatsapp_resolver:
+    paths: ["*agent_whatsapp_resolver*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/agents/whatsapp_resolver.py"
+
+  agent_youtube_fetch:
+    paths: ["*agent_youtube_fetch*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/agents/youtube_fetch.py"
+
+  agent_transcribe:
+    paths: ["*agent_transcribe*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/agents/transcribe.py"
+
+  agent_document_loader:
+    paths: ["*agent_document_loader*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/agents/document_loader.py"
+
+  agent_thread_discovery:
+    paths: ["*agent_thread_discovery*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/agents/thread_discovery.py"
+
+  agent_context_card_writer:
+    paths: ["*agent_context_card_writer*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/agents/context_card_writer.py"
+
+  agent_context_card_reviewer:
+    paths: ["*agent_context_card_reviewer*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/agents/context_card_reviewer.py"
+
+  agent_embedding_generator:
+    paths: ["*agent_embedding_generator*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/agents/embedding_generator.py"
+
+  agent_sync_log_writer:
+    paths: ["*agent_sync_log_writer*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/agents/sync_log_writer.py"
+
+  agent_memgraph_projector:
+    paths: ["*agent_memgraph_projector*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/agents/memgraph_projector.py"
+
+  # ============================================================
+  # TOOLS
+  # ============================================================
+
+  verification_gates:
+    paths: ["*verification_gates*"]
+    defaults:
+      outputs:
+        code:
+          path: "src/tools/verification_gates.py"
+
+  # ============================================================
+  # DEFAULT FALLBACK
+  # ============================================================
+  # CRITICAL: prompts_dir goes ONLY here, not in other contexts!
+
+  default:
+    defaults:
+      prompts_dir: "prompts/"
+      generate_output_path: "src/"

@@ -1,0 +1,26 @@
+% Purpose: Transcription agent converting audio artifacts to timestamped text using Ollama
+
+% Requirements
+- Create Kafka consumer agent (ai.transcribe_timestamped.v1)
+- Process audio artifacts from MinIO
+- Use Ollama Whisper-compatible model via AIEngineService gRPC
+- Generate word-level timestamped transcription
+- Create EvidenceUnit records with mandatory video timecode locators (start_ms, end_ms) for each utterance
+- Handle speaker diarization, punctuation restoration, and confidence scoring
+- Publish transcript evidence units to events.kb.v1
+
+% Output Format
+- Generate Python module at src/agents/transcribe.py
+- Include comprehensive type hints
+- Use async/await patterns
+
+% Dependencies
+- proto_schemas_Python.prompt
+- kafka_consumer_base_Python.prompt
+- kafka_producer_base_Python.prompt
+- grpc_client_base_Python.prompt
+
+% Implementation Notes
+- Use Ollama Whisper model
+- Handle large audio files
+- Implement chunking if needed
