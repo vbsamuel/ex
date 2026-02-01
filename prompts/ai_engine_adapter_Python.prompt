@@ -1,0 +1,24 @@
+% Purpose: AI Engine adapter providing unified interface to Ollama (default) and optional cloud engines
+
+% Requirements
+- Implement AIEngineService gRPC interface with pluggable engine backends
+- Default to Ollama client for writer, reviewer, and embedding models
+- Support configurable engine profiles with model selection, temperature, max_tokens, and timeout
+- Implement streaming for long-form generation
+- Support batch embedding
+- Include model health checks
+- Enforce grounding requirement by validating citations in all generated content
+
+% Output Format
+- Generate Python module at src/services/ai_engine_adapter.py
+- Include comprehensive type hints
+- Use async/await patterns
+
+% Dependencies
+- proto_schemas_Python.prompt
+- grpc_server_base_Python.prompt
+
+% Implementation Notes
+- Use ollama Python client
+- Implement proper error handling
+- Support model selection via configuration

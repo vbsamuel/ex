@@ -1,0 +1,29 @@
+% Purpose: Infrastructure orchestration defining all 15 services with deterministic port mappings and health checks
+
+% Requirements
+- Define Docker Compose configuration for complete IE-X stack
+- Services: Kafka (9092), Schema Registry (8081), Postgres with pgvector (5432), MinIO (9000/9001), Memgraph (7687), ClickHouse (8123/9009), Keycloak (8080), Dragonfly cache (6379), OpenTelemetry Collector (4317/4318), Prometheus (9090), Grafana (3000)
+- Include volume mounts for data persistence
+- Include network configuration
+- Include environment variables for service configuration
+- Include dependency ordering
+- Support both development and production profiles
+
+% Output Format
+- Generate docker-compose.yml file
+- Use Docker Compose version 3.8+
+- Include health checks for all services
+- Use named volumes for persistence
+
+% Context
+This is the infrastructure foundation for running the IE-X system locally or in development environments.
+
+% Dependencies
+- None (foundational module)
+
+% Implementation Notes
+- Use official Docker images where available
+- Configure Postgres with pgvector extension
+- Set up Kafka with appropriate topic auto-creation settings
+- Configure MinIO with appropriate bucket creation
+- Set resource limits appropriately

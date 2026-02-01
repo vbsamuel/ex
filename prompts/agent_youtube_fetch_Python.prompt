@@ -1,0 +1,27 @@
+% Purpose: YouTube fetch agent downloading video metadata and audio for transcription
+
+% Requirements
+- Create Kafka consumer agent (ingest.youtube_fetch.v1)
+- Process YouTube URLs from StepCompleted events
+- Use yt-dlp to fetch video metadata (title, description, duration, thumbnail)
+- Download audio in best quality
+- Upload audio artifacts to MinIO with retention policy
+- Store metadata in Postgres via PersistenceService gRPC
+- Publish completion event with artifact IDs
+- Handle age-restricted videos, playlists, and live streams
+
+% Output Format
+- Generate Python module at src/agents/youtube_fetch.py
+- Include comprehensive type hints
+- Use async/await patterns
+
+% Dependencies
+- proto_schemas_Python.prompt
+- kafka_consumer_base_Python.prompt
+- kafka_producer_base_Python.prompt
+- grpc_client_base_Python.prompt
+
+% Implementation Notes
+- Use yt-dlp library
+- Use boto3 for MinIO uploads
+- Handle errors gracefully

@@ -1,0 +1,27 @@
+% Purpose: Sync log writer agent maintaining monotonic log for cross-device synchronization
+
+% Requirements
+- Create Kafka consumer agent (sync.monotonic_log_writer.v1)
+- Subscribe to events.kb.v1
+- Write all knowledge events to sync.sync_log table with monotonically increasing sequence numbers
+- Implement cursor-based pagination for sync clients
+- Compute delta snapshots
+- Manage device_sync_state for each client
+- Publish sync snapshots to sync.snapshots table
+- Cache recent deltas in Dragonfly (sync namespace, TTL 60s)
+
+% Output Format
+- Generate Python module at src/agents/sync_log_writer.py
+- Include comprehensive type hints
+- Use async/await patterns
+
+% Dependencies
+- proto_schemas_Python.prompt
+- kafka_consumer_base_Python.prompt
+- grpc_client_base_Python.prompt
+- cache_contract_Python.prompt
+
+% Implementation Notes
+- Ensure monotonic sequence numbers
+- Implement efficient delta computation
+- Handle concurrent writes

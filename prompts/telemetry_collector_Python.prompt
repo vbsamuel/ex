@@ -1,0 +1,23 @@
+% Purpose: Telemetry collector aggregating OpenTelemetry traces, metrics, and logs to ClickHouse
+
+% Requirements
+- Create OpenTelemetry Collector configuration and Python service
+- Publish to events.metrics.v1 Kafka topic
+- Receive traces (ports 4317/4318), metrics, and logs
+- Process with batch and sampling processors
+- Export to ClickHouse for storage and Prometheus for real-time metrics
+- Include span enrichment, resource detection, and correlation IDs for distributed tracing
+
+% Output Format
+- Generate Python module at src/shared/telemetry_collector.py
+- Include comprehensive type hints
+- Provide initialization function
+
+% Dependencies
+- proto_schemas_Python.prompt
+- kafka_producer_base_Python.prompt
+
+% Implementation Notes
+- Use OpenTelemetry Python SDK
+- Configure OTLP exporters
+- Implement proper context propagation

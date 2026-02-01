@@ -1,0 +1,27 @@
+% Purpose: Orchestrator service entry point starting Kafka consumers and producers
+
+% Requirements
+- Initialize Kafka consumer for events.orchestrator.v1
+- Initialize Kafka producers for step events
+- Start workflow state manager
+- Configure OpenTelemetry tracing
+- Set up signal handlers for graceful shutdown
+- Validate Kafka connectivity on startup
+- Implement health checks
+- Recover in-flight episodes on startup
+
+% Output Format
+- Generate Python module at src/services/orchestrator_service_main.py
+- Include comprehensive type hints
+- Provide if __name__ == "__main__" entry point
+
+% Dependencies
+- orchestrator_service_Python.prompt
+- kafka_consumer_base_Python.prompt
+- kafka_producer_base_Python.prompt
+- telemetry_collector_Python.prompt
+
+% Implementation Notes
+- Use asyncio for async runtime
+- Implement proper signal handling
+- Include episode recovery logic

@@ -1,0 +1,26 @@
+% Purpose: Base Kafka consumer class with Protobuf deserialization and event processing patterns
+
+% Requirements
+- Create abstract base class for Kafka consumers using aiokafka async consumer
+- Implement Protobuf deserializer using Schema Registry
+- Add consumer group management
+- Implement offset commit strategies (at-least-once, at-most-once)
+- Add rebalancing handlers
+- Support message batching
+- Implement graceful shutdown
+- Add DLQ publishing for poison pills
+- Implement backpressure handling and health checks
+
+% Output Format
+- Generate Python module at src/shared/kafka_consumer_base.py
+- Use Python ABC (Abstract Base Class)
+- Include comprehensive type hints
+
+% Dependencies
+- proto_schemas_Python.prompt
+- kafka_producer_base_Python.prompt (for DLQ publishing)
+
+% Implementation Notes
+- Use aiokafka for async consumer
+- Integrate with Confluent Schema Registry
+- Implement proper async/await patterns

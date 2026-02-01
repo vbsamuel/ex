@@ -1,0 +1,24 @@
+% Purpose: Cache service implementing gRPC CacheService with namespace-aware operations
+
+% Requirements
+- Implement gRPC service wrapping Dragonfly cache using cache_contract definitions
+- Implement CacheService with get/set/delete operations respecting namespace TTLs and key formats
+- Provide distributed lock acquisition with stampede prevention (jitter 50-150ms, max 20 retries)
+- Support cache warming, invalidation cascades
+- Use Redis protocol compatibility
+- Use async redis-py client
+
+% Output Format
+- Generate Python module at src/services/cache_service.py
+- Include comprehensive type hints
+- Use async/await patterns
+
+% Dependencies
+- proto_schemas_Python.prompt
+- grpc_server_base_Python.prompt
+- cache_contract_Python.prompt
+
+% Implementation Notes
+- Use redis-py async client
+- Implement proper connection pooling
+- Handle connection failures gracefully

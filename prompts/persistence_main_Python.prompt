@@ -1,0 +1,26 @@
+% Purpose: Persistence service entry point starting the gRPC server with proper configuration
+
+% Requirements
+- Initialize asyncpg connection pool
+- Start gRPC server on port 50051
+- Register PersistenceService implementation
+- Configure OpenTelemetry tracing
+- Set up signal handlers for graceful shutdown
+- Validate database connectivity on startup
+- Implement health checks
+- Read configuration from environment variables
+
+% Output Format
+- Generate Python module at src/services/persistence_service_main.py
+- Include comprehensive type hints
+- Provide if __name__ == "__main__" entry point
+
+% Dependencies
+- persistence_service_Python.prompt
+- grpc_server_base_Python.prompt
+- telemetry_collector_Python.prompt
+
+% Implementation Notes
+- Use asyncio for async runtime
+- Implement proper signal handling
+- Include startup validation

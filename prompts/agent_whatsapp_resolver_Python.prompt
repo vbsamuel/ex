@@ -1,0 +1,26 @@
+% Purpose: WhatsApp link resolver agent extracting YouTube URLs from WhatsApp messages
+
+% Requirements
+- Create Kafka consumer agent (ingest.whatsapp_link_resolver.v1)
+- Subscribe to events.steps.requested.v1
+- Filter for WhatsApp ingest tasks
+- Extract YouTube URLs from message content using regex patterns
+- Validate URLs
+- Publish StepCompleted events with extracted links to events.steps.completed.v1
+- Handle link previews, shortened URLs, and timestamp fragments
+- No direct agent calls - pure event-driven coordination
+
+% Output Format
+- Generate Python module at src/agents/whatsapp_resolver.py
+- Include comprehensive type hints
+- Use async/await patterns
+
+% Dependencies
+- proto_schemas_Python.prompt
+- kafka_consumer_base_Python.prompt
+- kafka_producer_base_Python.prompt
+
+% Implementation Notes
+- Use regex for URL extraction
+- Implement URL validation
+- Handle edge cases

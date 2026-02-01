@@ -1,0 +1,27 @@
+% Purpose: Thread discovery agent identifying conceptual threads across evidence units using embeddings
+
+% Requirements
+- Create Kafka consumer agent (ai.thread_discovery.v1)
+- Analyze evidence units to discover thematic threads
+- Generate embeddings via AIEngineService
+- Query pgvector for similar evidence using HNSW index
+- Cluster related units using DBSCAN or hierarchical clustering
+- Create Thread records with evidence membership
+- Handle temporal ordering, citation graphs, and cross-source relationships
+- Publish thread discoveries to events.kb.v1
+
+% Output Format
+- Generate Python module at src/agents/thread_discovery.py
+- Include comprehensive type hints
+- Use async/await patterns
+
+% Dependencies
+- proto_schemas_Python.prompt
+- kafka_consumer_base_Python.prompt
+- kafka_producer_base_Python.prompt
+- grpc_client_base_Python.prompt
+
+% Implementation Notes
+- Use scikit-learn for clustering
+- Implement graph-based thread discovery
+- Handle temporal relationships

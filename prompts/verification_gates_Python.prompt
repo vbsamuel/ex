@@ -1,0 +1,30 @@
+% Purpose: Verification gates validating all infrastructure components and their configurations
+
+% Requirements
+- Create smoke test suite verifying all required infrastructure
+- Verify Kafka topics (exact names, partitions, retention)
+- Verify Schema Registry subjects
+- Verify Postgres schemas/tables/pgvector
+- Verify MinIO bucket operations (put/get)
+- Verify Memgraph CRUD operations (create/query/delete)
+- Verify ClickHouse insert/select
+- Verify Keycloak OIDC discovery endpoint
+- Verify Dragonfly PING
+- Verify Protobuf codegen output existence
+- Run as CLI tool and CI step
+- Publish verification results to events.metrics.v1
+
+% Output Format
+- Generate Python module at src/tools/verification_gates.py
+- Include comprehensive type hints
+- Provide CLI interface with argparse
+
+% Dependencies
+- proto_schemas_Python.prompt
+- kafka_producer_base_Python.prompt
+- grpc_client_base_Python.prompt
+
+% Implementation Notes
+- Implement comprehensive checks
+- Support fail-fast mode
+- Provide detailed error messages

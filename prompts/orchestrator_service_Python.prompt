@@ -1,0 +1,26 @@
+% Purpose: Orchestrator service coordinating workflow execution via Kafka events
+
+% Requirements
+- Implement workflow wf.youtube_from_whatsapp_to_context_cards.v1 with steps s1-s9
+- Subscribe to events.orchestrator.v1 for workflow requests
+- Publish StepRequested events to events.steps.requested.v1 for each workflow step
+- Consume StepCompleted events from events.steps.completed.v1 to advance workflow state
+- Maintain Episode and EpisodeStep records in Postgres via PersistenceService
+- Implement retry logic, timeout handling, and workflow compensation
+- No direct agent invocation - pure event orchestration
+
+% Output Format
+- Generate Python module at src/services/orchestrator_service.py
+- Include comprehensive type hints
+- Use async/await patterns
+
+% Dependencies
+- proto_schemas_Python.prompt
+- kafka_consumer_base_Python.prompt
+- kafka_producer_base_Python.prompt
+- grpc_client_base_Python.prompt
+
+% Implementation Notes
+- Use state machine pattern for workflow management
+- Implement proper error recovery
+- Support workflow cancellation

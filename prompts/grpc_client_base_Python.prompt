@@ -1,0 +1,25 @@
+% Purpose: Base gRPC client class providing connection management, retry logic, and circuit breaking
+
+% Requirements
+- Create abstract base class for gRPC clients
+- Implement connection pooling
+- Add exponential backoff retry
+- Implement circuit breaker pattern
+- Configure request timeout
+- Integrate health check
+- Handle channel creation, SSL/TLS configuration, load balancing
+- Support automatic reconnection
+- Provide async context manager interface
+
+% Output Format
+- Generate Python module at src/shared/grpc_client_base.py
+- Use Python ABC (Abstract Base Class)
+- Include comprehensive type hints
+
+% Dependencies
+- proto_schemas_Python.prompt
+
+% Implementation Notes
+- Use grpcio for client implementation
+- Implement __aenter__ and __aexit__ for context manager
+- Include connection health monitoring

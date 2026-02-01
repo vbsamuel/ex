@@ -1,0 +1,27 @@
+% Purpose: Context card reviewer agent validating grounding and quality of generated cards
+
+% Requirements
+- Create Kafka consumer agent (ai.context_card_reviewer.v1)
+- Validate ContextCard drafts from writer
+- Use Ollama reviewer model to verify citation accuracy
+- Check that all claims reference valid EvidenceUnit IDs with locators
+- Assess coherence and completeness
+- Suggest improvements
+- Enforce mandatory grounding constraint: reject cards with ungrounded claims
+- Publish approved cards to events.kb.v1 or revision requests to events.steps.requested.v1
+
+% Output Format
+- Generate Python module at src/agents/context_card_reviewer.py
+- Include comprehensive type hints
+- Use async/await patterns
+
+% Dependencies
+- proto_schemas_Python.prompt
+- kafka_consumer_base_Python.prompt
+- kafka_producer_base_Python.prompt
+- grpc_client_base_Python.prompt
+
+% Implementation Notes
+- Use Ollama reviewer model
+- Implement citation validation
+- Handle revision loops

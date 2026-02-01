@@ -1,0 +1,26 @@
+% Purpose: Context card writer agent generating grounded context cards from evidence and threads
+
+% Requirements
+- Create Kafka consumer agent (ai.context_card_writer.v1)
+- Create ContextCard records from threads and evidence
+- Use Ollama writer model via AIEngineService to synthesize narrative summaries
+- Enforce mandatory citations to EvidenceUnit IDs
+- Validate grounding: every claim must reference specific evidence with locators
+- Generate structured cards with title, summary, key insights, and evidence citations
+- Publish draft cards for review to events.steps.completed.v1
+
+% Output Format
+- Generate Python module at src/agents/context_card_writer.py
+- Include comprehensive type hints
+- Use async/await patterns
+
+% Dependencies
+- proto_schemas_Python.prompt
+- kafka_consumer_base_Python.prompt
+- kafka_producer_base_Python.prompt
+- grpc_client_base_Python.prompt
+
+% Implementation Notes
+- Use Ollama for text generation
+- Implement citation validation
+- Use structured output with Pydantic
