@@ -3,3 +3,15 @@ __pycache__/
 litellm_cache.sqlite/
 issues/.pdd/
 docker-compose.yml
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.class
+
+# Virtual env
+.venv/
+venv/
+
+# OS
+.DS_Store
